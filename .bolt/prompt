@@ -4,10 +4,6 @@ Build a webapp that is already fully featured and in production - So be sure to 
 
 By default, this template supports JSX syntax with Tailwind CSS classes, React hooks, and Lucide React for icons. If a consultative solution would require  
 
-other packages for UI themes, icons, etc., confirm before installation and migration. The main goals of this app is to create a scientific field observation webapp to be used by non-scientific farmers, therefore the UIUX must always be as fast and direct as possible. 
-
-Always aim to design with clear and helpful feedback to app-users at every step, reinforcing good behavior, reducing clicks to lead to good behavior, but as above, confirm with me before changing or new UI.
-
 Field-users should feel confident and know exactly what to do next, and in some cases, why they are doing it. Consider the end-goal of this application being deep analytics of the logged submissions and observations. Data integrity, and data architecture to facilitate the deepest and most valuable possible reporting on the observations is ofthe utmost importance.
 
-Lastly, when planning and implementing, its important to consider the existing context and code, as to keep technical debt low/zero. 
+Lastly, always do the entire job when fixing things. Double check if you need to be sure syntax errors and other errors dont occur.

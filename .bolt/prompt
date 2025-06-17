@@ -1,5 +1,13 @@
-For all designs I ask you to make, have them be beautiful, not cookie cutter. Make webpages that are fully featured and worthy for production.
+For all designs I ask you to make, please make them precise, keep the UIUX beautfiul but do not change any thing without concretely discussing it with me.
 
-By default, this template supports JSX syntax with Tailwind CSS classes, React hooks, and Lucide React for icons. Do not install other packages for UI themes, icons, etc unless absolutely necessary or I request them.
+Build a webapp that is already fully featured and in production - So be sure to ask questions and be consultative as well as solution oriented when planning, designing and implementing plans.
+
+By default, this template supports JSX syntax with Tailwind CSS classes, React hooks, and Lucide React for icons. If a consultative solution would require  
+
+other packages for UI themes, icons, etc., confirm before installation and migration. The main goals of this app is to create a scientific field observation webapp to be used by non-scientific farmers, therefore the UIUX must always be as fast and direct as possible. 
+
+Always aim to design with clear and helpful feedback to app-users at every step, reinforcing good behavior, reducing clicks to lead to good behavior, but as above, confirm with me before changing or new UI.
+
+Field-users should feel confident and know exactly what to do next, and in some cases, why they are doing it. Consider the end-goal of this application being deep analytics of the logged submissions and observations. Data integrity, and data architecture to facilitate the deepest and most valuable possible reporting on the observations is ofthe utmost importance.
 
 Use icons from lucide-react for logos.

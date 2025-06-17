@@ -1,12 +1,15 @@
 import { create } from 'zustand';
-import { ActiveSession } from '../types/session';
-import { supabase } from '../lib/supabaseClient';
+import { 
+  SubmissionSession, 
+  SessionStatus, 
+  InitialSubmissionData,
+  CreateSessionResponse,
+  ActiveSession
+} from '../types/session';
 
 interface SessionState {
   // Active sessions that the user has access to
   activeSessions: ActiveSession[];
-  // Unclaimed sessions that the user can claim
-  unclaimedSessions: ActiveSession[];
   // Loading state for sessions
   isLoading: boolean;
   // Error message if any
@@ -17,7 +20,6 @@ interface SessionState {
   
   // Actions
   setActiveSessions: (sessions: ActiveSession[]) => void;
-  setUnclaimedSessions: (sessions: ActiveSession[]) => void;
   setIsLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
   setCurrentSessionId: (sessionId: string | null) => void;
@@ -34,167 +36,149 @@ interface SessionState {
   // Clear all sessions (e.g., on logout)
   clearSessions: () => void;
   
-  // Claim an unclaimed session
+  // Flag to track if there are unclaimed sessions
+  hasUnclaimedSessions: boolean;
+  setHasUnclaimedSessions: (value: boolean) => void;
+  
+  // Claim a session
   claimSession: (sessionId: string) => Promise<boolean>;
 }
 
 export const useSessionStore = create<SessionState>((set, get) => ({
   activeSessions: [],
-  unclaimedSessions: [],
   isLoading: false,
   error: null,
   currentSessionId: null,
+  hasUnclaimedSessions: false,
   
-  setActiveSessions: (sessions) => {
-    // Split the sessions into active and unclaimed based on is_unclaimed flag
-    const active = sessions.filter(s => !s.is_unclaimed);
-    const unclaimed = sessions.filter(s => s.is_unclaimed);
-    
-    set({ 
-      activeSessions: active,
-      unclaimedSessions: unclaimed
-    });
-  },
-  
-  setUnclaimedSessions: (sessions) => set({ unclaimedSessions: sessions }),
+  setActiveSessions: (sessions) => set({ 
+    // Filter out cancelled and expired sessions
+    activeSessions: sessions.filter(s => 
+      s.session_status !== 'Cancelled' && 
+      !s.session_status.startsWith('Expired')
+    ),
+    // Check if there are any unclaimed sessions
+    hasUnclaimedSessions: sessions.some(s => s.is_unclaimed === true)
+  }),
   
   setIsLoading: (isLoading) => set({ isLoading }),
-  
   setError: (error) => set({ error }),
-  
   setCurrentSessionId: (sessionId) => set({ currentSessionId: sessionId }),
+  setHasUnclaimedSessions: (value) => set({ hasUnclaimedSessions: value }),
   
-  addSession: (session) => set((state) => {
-    if (session.is_unclaimed) {
-      return {
-        unclaimedSessions: [session, ...state.unclaimedSessions]
-      };
-    }
-    
-    return {
-      activeSessions: [session, ...state.activeSessions]
-    };
-  }),
+  addSession: (session) => set((state) => ({
+    // Only add if not cancelled or expired
+    activeSessions: session.session_status !== 'Cancelled' && 
+                   !session.session_status.startsWith('Expired')
+      ? [session, ...state.activeSessions]
+      : state.activeSessions,
+    // Update unclaimed sessions flag if needed
+    hasUnclaimedSessions: session.is_unclaimed ? true : state.hasUnclaimedSessions
+  })),
   
   updateSession: (sessionId, updates) => set((state) => {
-    // Check if this is in activeSessions
-    const activeIndex = state.activeSessions.findIndex(s => s.session_id === sessionId);
-    if (activeIndex !== -1) {
-      const updatedActiveSessions = [...state.activeSessions];
-      updatedActiveSessions[activeIndex] = {
-        ...updatedActiveSessions[activeIndex],
-        ...updates
-      };
+    // Get the updated session
+    const updatedSession = {
+      ...state.activeSessions.find(s => s.session_id === sessionId),
+      ...updates
+    } as ActiveSession;
+    
+    // If session is now cancelled or expired, remove it from active sessions
+    if (updatedSession.session_status === 'Cancelled' || 
+        updatedSession.session_status.startsWith('Expired')) {
       return {
-        activeSessions: updatedActiveSessions
+        activeSessions: state.activeSessions.filter(s => s.session_id !== sessionId),
+        // Recalculate if there are any unclaimed sessions
+        hasUnclaimedSessions: state.activeSessions
+          .filter(s => s.session_id !== sessionId)
+          .some(s => s.is_unclaimed === true)
       };
     }
     
-    // Check if this is in unclaimedSessions
-    const unclaimedIndex = state.unclaimedSessions.findIndex(s => s.session_id === sessionId);
-    if (unclaimedIndex !== -1) {
-      // If session is being claimed (is_unclaimed is set to false), move it from unclaimed to active
-      if (updates.is_unclaimed === false) {
-        const updatedUnclaimedSessions = [...state.unclaimedSessions];
-        const claimedSession = {
-          ...updatedUnclaimedSessions[unclaimedIndex],
-          ...updates
-        };
-        
-        // Remove from unclaimed and add to active
-        return {
-          unclaimedSessions: updatedUnclaimedSessions.filter((_, i) => i !== unclaimedIndex),
-          activeSessions: [claimedSession, ...state.activeSessions]
-        };
-      }
-      
-      // Otherwise just update it in unclaimedSessions
-      const updatedUnclaimedSessions = [...state.unclaimedSessions];
-      updatedUnclaimedSessions[unclaimedIndex] = {
-        ...updatedUnclaimedSessions[unclaimedIndex],
-        ...updates
-      };
-      
-      return {
-        unclaimedSessions: updatedUnclaimedSessions
-      };
-    }
-    
-    return {};
-  }),
-  
-  removeSession: (sessionId) => set((state) => {
-    // Check both active and unclaimed sessions
-    const isActive = state.activeSessions.some(s => s.session_id === sessionId);
-    const isUnclaimed = state.unclaimedSessions.some(s => s.session_id === sessionId);
+    // Otherwise update it
+    const updatedSessions = state.activeSessions.map((session) => 
+      session.session_id === sessionId
+        ? updatedSession
+        : session
+    );
     
     return {
-      activeSessions: isActive 
-        ? state.activeSessions.filter(s => s.session_id !== sessionId) 
-        : state.activeSessions,
-      unclaimedSessions: isUnclaimed
-        ? state.unclaimedSessions.filter(s => s.session_id !== sessionId)
-        : state.unclaimedSessions,
-      // If the current session is removed, clear currentSessionId
-      currentSessionId: state.currentSessionId === sessionId
-        ? null
-        : state.currentSessionId
+      activeSessions: updatedSessions,
+      // Recalculate if there are any unclaimed sessions
+      hasUnclaimedSessions: updatedSessions.some(s => s.is_unclaimed === true)
     };
   }),
+  
+  removeSession: (sessionId) => set((state) => ({
+    activeSessions: state.activeSessions.filter(
+      (session) => session.session_id !== sessionId
+    ),
+    // If the current session is removed, clear currentSessionId
+    currentSessionId: state.currentSessionId === sessionId
+      ? null
+      : state.currentSessionId,
+    // Recalculate if there are any unclaimed sessions
+    hasUnclaimedSessions: state.activeSessions
+      .filter(s => s.session_id !== sessionId)
+      .some(s => s.is_unclaimed === true)
+  })),
   
   clearSessions: () => set({
     activeSessions: [],
-    unclaimedSessions: [],
     currentSessionId: null,
-    error: null
+    error: null,
+    hasUnclaimedSessions: false
   }),
   
   claimSession: async (sessionId) => {
     try {
-      const { data, error } = await supabase
-        .rpc('claim_submission_session', { p_session_id: sessionId });
-        
+      const { data, error } = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/rpc/claim_submission_session`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY
+          },
+          body: JSON.stringify({ p_session_id: sessionId })
+        }
+      ).then(res => res.json());
+      
       if (error) {
         console.error('Error claiming session:', error);
-        throw error;
+        return false;
       }
       
-      if (data.success) {
-        // Update the session in the store
-        const state = get();
-        const sessionIndex = state.unclaimedSessions.findIndex(s => s.session_id === sessionId);
-        
-        if (sessionIndex !== -1) {
-          const session = state.unclaimedSessions[sessionIndex];
-          
-          // Get the current user information directly from auth
-          const { data: userData } = await supabase.auth.getUser();
-          const userEmail = userData.user?.email || '';
-          const userName = userData.user?.user_metadata?.full_name || '';
-          
-          const claimedSession = {
-            ...session,
-            is_unclaimed: false,
-            opened_by_user_id: userData.user?.id,
-            opened_by_user_email: userEmail,
-            opened_by_user_name: userName,
-            session_status: 'Working'
-          };
-          
-          // Update the store
-          set({
-            unclaimedSessions: state.unclaimedSessions.filter(s => s.session_id !== sessionId),
-            activeSessions: [claimedSession, ...state.activeSessions],
-            currentSessionId: sessionId  // Set as current session
-          });
-        }
-        
-        return true;
+      if (!data.success) {
+        console.error('Failed to claim session:', data.message);
+        return false;
       }
       
-      return false;
+      // Update the session in the store
+      const { session } = data;
+      const currentSessions = get().activeSessions;
+      const sessionIndex = currentSessions.findIndex(s => s.session_id === sessionId);
+      
+      if (sessionIndex >= 0) {
+        const updatedSessions = [...currentSessions];
+        updatedSessions[sessionIndex] = {
+          ...updatedSessions[sessionIndex],
+          opened_by_user_id: session.opened_by_user_id,
+          session_status: session.session_status,
+          is_unclaimed: false
+        };
+        
+        set({ 
+          activeSessions: updatedSessions,
+          currentSessionId: sessionId,
+          hasUnclaimedSessions: updatedSessions.some(s => s.is_unclaimed === true)
+        });
+      }
+      
+      return true;
     } catch (error) {
-      console.error('Error claiming session:', error);
+      console.error('Error in claimSession:', error);
       return false;
     }
   }

@@ -4,7 +4,8 @@ import {
   SessionStatus, 
   InitialSubmissionData,
   CreateSessionResponse,
-  ActiveSession
+  ActiveSession,
+  ClaimSessionResponse
 } from '../types/session';
 import { PetriDefaults, GasifierDefaults, Submission } from './types';
 import { toast } from 'react-toastify';
@@ -184,7 +185,7 @@ export const completeSubmissionSession = async (sessionId: string): Promise<any>
 /**
  * Cancels a submission session
  */
-export const cancelSubmissionSession = async (sessionId: string): Promise<any> => {
+export const cancelSubmissionSession = async (sessionId: string): Promise<boolean> => {
   try {
     const { data, error } = await supabase.rpc('cancel_submission_session', {
       p_session_id: sessionId
@@ -193,28 +194,19 @@ export const cancelSubmissionSession = async (sessionId: string): Promise<any> =
     if (error) {
       logger.error('Error cancelling submission session:', error);
       toast.error(`Failed to cancel submission: ${error.message}`);
-      return {
-        success: false,
-        message: error.message
-      };
+      return false;
     }
       
     if (!data.success) {
       toast.error(data.message || 'Failed to cancel submission');
-      return {
-        success: false,
-        message: data.message
-      };
+      return false;
     }
       
     return data;
   } catch (err) {
     logger.error('Error in cancelSubmissionSession:', err);
     toast.error('Error cancelling submission');
-    return {
-      success: false,
-      message: err instanceof Error ? err.message : 'Unknown error'
-    };
+    return false;
   }
 };
 
@@ -291,7 +283,7 @@ export const escalateSubmissionSession = async (sessionId: string, programId: st
 /**
  * Claims an unclaimed session
  */
-export const claimSubmissionSession = async (sessionId: string): Promise<any> => {
+export const claimSubmissionSession = async (sessionId: string): Promise<ClaimSessionResponse> => {
   try {
     const { data, error } = await supabase.rpc('claim_submission_session', {
       p_session_id: sessionId
@@ -308,7 +300,11 @@ export const claimSubmissionSession = async (sessionId: string): Promise<any> =>
       return { success: false, message: data.message };
     }
 
-    return { success: true, message: 'Session claimed successfully', session: data.session };
+    return { 
+      success: true, 
+      message: 'Session claimed successfully', 
+      session: data.session 
+    };
   } catch (err) {
     logger.error('Error in claimSubmissionSession:', err);
     toast.error('An error occurred while claiming the submission');

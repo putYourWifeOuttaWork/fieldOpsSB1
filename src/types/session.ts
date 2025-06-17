@@ -1,4 +1,4 @@
-import { Database } from '../lib/types';
+import { Submission, Site, PilotProgram, UserRole } from '../lib/types';
 
 // Session status enum matching the database enum
 export type SessionStatus = 'Opened' | 'Working' | 'Completed' | 'Cancelled' | 
@@ -11,7 +11,7 @@ export interface SubmissionSession {
   submission_id: string;
   site_id: string;
   program_id: string;
-  opened_by_user_id: string | null;
+  opened_by_user_id: string | null; // Can be null for unclaimed sessions
   session_start_time: string;
   last_activity_time: string;
   session_status: SessionStatus;
@@ -31,16 +31,16 @@ export interface ActiveSession {
   site_name: string;
   program_id: string;
   program_name: string;
-  opened_by_user_id: string | null;
-  opened_by_user_email: string;
-  opened_by_user_name?: string;
+  opened_by_user_id: string | null; // Can be null for unclaimed sessions
+  opened_by_user_email: string | null; // Can be null for unclaimed sessions
+  opened_by_user_name?: string | null; // Can be null for unclaimed sessions
   session_start_time: string;
   last_activity_time: string;
   session_status: string;
   percentage_complete: number;
-  global_submission_id?: number; // Added global submission ID
+  global_submission_id?: number;
   escalated_to_user_ids?: string[];
-  is_unclaimed?: boolean; // Flag to identify unclaimed sessions
+  is_unclaimed?: boolean; // Flag to indicate if this is an unclaimed session
 }
 
 // Initial submission data for creating a new session
@@ -82,9 +82,6 @@ export interface SessionUser {
   role: UserRole | 'Owner' | 'Collaborator';
 }
 
-// User role type
-export type UserRole = 'Admin' | 'Edit' | 'Respond' | 'ReadOnly';
-
 // Session with full context data
 export interface SessionWithContext {
   session: SubmissionSession;
@@ -95,7 +92,9 @@ export interface SessionWithContext {
   progress: SessionProgress;
 }
 
-// Placeholder types to avoid errors (these should be defined elsewhere in your project)
-type Submission = any;
-type Site = any;
-type PilotProgram = any;
+// Response from claiming a session
+export interface ClaimSessionResponse {
+  success: boolean;
+  message?: string;
+  session?: SubmissionSession;
+}

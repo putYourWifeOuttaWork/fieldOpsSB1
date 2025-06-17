@@ -64,7 +64,8 @@ const UnclaimedSessionsCard = ({ className = 'mb-6', limit = 5 }: UnclaimedSessi
   }, []);
 
   // Get limited sessions to display
-  const displayedSessions = unclaimedSessions.slice(0, limit);
+  // Ensure unclaimedSessions is an array before calling slice
+  const displayedSessions = Array.isArray(unclaimedSessions) ? unclaimedSessions.slice(0, limit) : [];
 
   if (isLoading) {
     return (
@@ -103,7 +104,7 @@ const UnclaimedSessionsCard = ({ className = 'mb-6', limit = 5 }: UnclaimedSessi
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {displayedSessions.map((session) => (
+          {displayedSessions.length > 0 && displayedSessions.map((session) => (
             <div 
               key={session.session_id} 
               className="border border-accent-200 rounded-lg p-4 bg-white hover:shadow-md transition-all"
@@ -132,7 +133,7 @@ const UnclaimedSessionsCard = ({ className = 'mb-6', limit = 5 }: UnclaimedSessi
           ))}
         </div>
         
-        {unclaimedSessions.length > limit && (
+        {Array.isArray(unclaimedSessions) && unclaimedSessions.length > limit && (
           <div className="mt-3 text-center">
             <Button 
               variant="outline" 

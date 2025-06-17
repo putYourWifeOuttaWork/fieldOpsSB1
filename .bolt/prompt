@@ -10,4 +10,4 @@ Always aim to design with clear and helpful feedback to app-users at every step,
 
 Field-users should feel confident and know exactly what to do next, and in some cases, why they are doing it. Consider the end-goal of this application being deep analytics of the logged submissions and observations. Data integrity, and data architecture to facilitate the deepest and most valuable possible reporting on the observations is ofthe utmost importance.
 
-Use icons from lucide-react for logos.
+Lastly, when planning and implementing, its important to consider the existing context and code, as to keep technical debt low/zero. 

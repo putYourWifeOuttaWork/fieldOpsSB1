@@ -62,35 +62,6 @@ export const createSubmissionSession = async (
 };
 
 /**
- * Claim an unclaimed submission session
- */
-export const claimSubmissionSession = async (sessionId: string): Promise<{success: boolean; message: string; session?: any}> => {
-  try {
-    logger.debug(`Claiming session: ${sessionId}`);
-    const { data, error } = await supabase.rpc('claim_submission_session', {
-      p_session_id: sessionId
-    });
-
-    if (error) {
-      logger.error('Error claiming session:', error);
-      return {
-        success: false,
-        message: error.message
-      };
-    }
-
-    logger.debug('Session claimed successfully:', data);
-    return data;
-  } catch (err) {
-    logger.error('Error in claimSubmissionSession:', err);
-    return {
-      success: false,
-      message: err instanceof Error ? err.message : 'Unknown error occurred'
-    };
-  }
-};
-
-/**
  * Updates a submission session's activity timestamp
  */
 export const updateSessionActivity = async (sessionId: string): Promise<boolean> => {
@@ -213,7 +184,7 @@ export const completeSubmissionSession = async (sessionId: string): Promise<any>
 /**
  * Cancels a submission session
  */
-export const cancelSubmissionSession = async (sessionId: string): Promise<boolean> => {
+export const cancelSubmissionSession = async (sessionId: string): Promise<any> => {
   try {
     const { data, error } = await supabase.rpc('cancel_submission_session', {
       p_session_id: sessionId
@@ -222,19 +193,28 @@ export const cancelSubmissionSession = async (sessionId: string): Promise<boolea
     if (error) {
       logger.error('Error cancelling submission session:', error);
       toast.error(`Failed to cancel submission: ${error.message}`);
-      return false;
+      return {
+        success: false,
+        message: error.message
+      };
     }
       
     if (!data.success) {
       toast.error(data.message || 'Failed to cancel submission');
-      return false;
+      return {
+        success: false,
+        message: data.message
+      };
     }
       
     return data;
   } catch (err) {
     logger.error('Error in cancelSubmissionSession:', err);
     toast.error('Error cancelling submission');
-    return false;
+    return {
+      success: false,
+      message: err instanceof Error ? err.message : 'Unknown error'
+    };
   }
 };
 
@@ -304,6 +284,34 @@ export const escalateSubmissionSession = async (sessionId: string, programId: st
   } catch (err) {
     logger.error('Error in escalateSubmissionSession:', err);
     toast.error('An error occurred while escalating the submission');
+    return { success: false, message: 'An unexpected error occurred' };
+  }
+};
+
+/**
+ * Claims an unclaimed session
+ */
+export const claimSubmissionSession = async (sessionId: string): Promise<any> => {
+  try {
+    const { data, error } = await supabase.rpc('claim_submission_session', {
+      p_session_id: sessionId
+    });
+
+    if (error) {
+      logger.error('Error claiming submission session:', error);
+      toast.error(`Failed to claim submission: ${error.message}`);
+      return { success: false, message: error.message };
+    }
+
+    if (!data.success) {
+      toast.error(data.message || 'Failed to claim submission');
+      return { success: false, message: data.message };
+    }
+
+    return { success: true, message: 'Session claimed successfully', session: data.session };
+  } catch (err) {
+    logger.error('Error in claimSubmissionSession:', err);
+    toast.error('An error occurred while claiming the submission');
     return { success: false, message: 'An unexpected error occurred' };
   }
 };
@@ -509,12 +517,12 @@ export const formatExpirationTime = (sessionStartTime: string): string => {
 
 export default {
   createSubmissionSession,
-  claimSubmissionSession,
   updateSessionActivity,
   completeSubmissionSession,
   cancelSubmissionSession,
   shareSubmissionSession,
   escalateSubmissionSession,
+  claimSubmissionSession,
   getActiveSessions,
   getSessionById,
   getSubmissionWithSession,

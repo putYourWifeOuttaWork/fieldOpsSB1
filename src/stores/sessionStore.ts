@@ -17,6 +17,7 @@ interface SessionState {
   
   // Actions
   setActiveSessions: (sessions: ActiveSession[]) => void;
+  setUnclaimedSessions: (sessions: ActiveSession[]) => void;
   setIsLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
   setCurrentSessionId: (sessionId: string | null) => void;
@@ -54,6 +55,8 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       unclaimedSessions: unclaimed
     });
   },
+  
+  setUnclaimedSessions: (sessions) => set({ unclaimedSessions: sessions }),
   
   setIsLoading: (isLoading) => set({ isLoading }),
   
@@ -163,23 +166,18 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         
         if (sessionIndex !== -1) {
           const session = state.unclaimedSessions[sessionIndex];
-          const { id: currentUserId } = (await supabase.auth.getUser()).data.user || {};
           
-          // Get the current user email and name from an active session if available,
-          // otherwise default to empty values
-          const currentUserInfo = state.activeSessions.length > 0 
-            ? { 
-                opened_by_user_email: state.activeSessions[0].opened_by_user_email,
-                opened_by_user_name: state.activeSessions[0].opened_by_user_name
-              }
-            : { opened_by_user_email: null, opened_by_user_name: null };
+          // Get the current user information directly from auth
+          const { data: userData } = await supabase.auth.getUser();
+          const userEmail = userData.user?.email || '';
+          const userName = userData.user?.user_metadata?.full_name || '';
           
           const claimedSession = {
             ...session,
             is_unclaimed: false,
-            opened_by_user_id: currentUserId,
-            opened_by_user_email: currentUserInfo.opened_by_user_email,
-            opened_by_user_name: currentUserInfo.opened_by_user_name,
+            opened_by_user_id: userData.user?.id,
+            opened_by_user_email: userEmail,
+            opened_by_user_name: userName,
             session_status: 'Working'
           };
           

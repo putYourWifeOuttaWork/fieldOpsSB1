@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ClipboardList, Clock, User, BarChart4, X, ChevronRight, Users, Hash, Hand } from 'lucide-react';
+import { ClipboardList, Clock, User, BarChart4, X, ChevronRight, Users, Hash, Plus } from 'lucide-react';
 import Button from '../common/Button';
 import { useSessionStore } from '../../stores/sessionStore';
 import sessionManager from '../../lib/sessionManager';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '../../lib/supabaseClient';
 import SessionProgress from './SessionProgress';
-import { toast } from 'react-toastify';
-import { ActiveSession } from '../../types/session';
 
 interface ActiveSessionsDrawerProps {
   isOpen: boolean;
@@ -19,84 +17,98 @@ const ActiveSessionsDrawer: React.FC<ActiveSessionsDrawerProps> = ({ isOpen, onC
   const navigate = useNavigate();
   const { 
     activeSessions, 
-    unclaimedSessions, // Added unclaimedSessions
+    unclaimedSessions,
     setActiveSessions, 
+    setUnclaimedSessions,
     setIsLoading,
-    setError,
-    currentSessionId,
-    claimSession // Added claimSession
+    claimSession
   } = useSessionStore();
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [sharedUsersDetails, setSharedUsersDetails] = useState<Map<string, { full_name: string | null; email: string }>>(new Map());
-
-  // Load active sessions when the drawer is opened
+  const [hasActiveSessions, setHasActiveSessions] = useState(false);
+  const [hasUnclaimedSessions, setHasUnclaimedSessions] = useState(false);
+  
+  // Load active sessions periodically
   useEffect(() => {
-    if (isOpen) {
-      loadSessions();
-    }
-  }, [isOpen]);
-
-  // Function to load active and unclaimed sessions
-  const loadSessions = async () => {
-    setIsRefreshing(true);
-    try {
-      setIsLoading(true);
-      
-      // Get active sessions using the enhanced RPC function
-      const { data, error } = await supabase.rpc('get_active_sessions_with_details');
-      
-      if (error) throw error;
-      
-      // Set the sessions in the store - will be split into active and unclaimed
-      setActiveSessions(data || []);
-      
+    const loadActiveSessions = async () => {
+      try {
+        setIsLoading(true);
+        const sessions = await sessionManager.getActiveSessions();
+        
+        // Split sessions into active and unclaimed
+        const active = sessions.filter(s => !s.is_unclaimed);
+        const unclaimed = sessions.filter(s => s.is_unclaimed);
+        
+        setActiveSessions(active);
+        setUnclaimedSessions(unclaimed);
+        
+        setHasActiveSessions(active.length > 0);
+        setHasUnclaimedSessions(unclaimed.length > 0);
+      } catch (error) {
+        console.error('Error loading active sessions:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    // Load initially
+    loadActiveSessions();
+    
+    // Set up interval (every 5 minutes)
+    const interval = setInterval(loadActiveSessions, 5 * 60 * 1000);
+    
+    return () => {
+      clearInterval(interval);
+    };
+  }, [setActiveSessions, setUnclaimedSessions, setIsLoading]);
+  
+  // Fetch shared users' details when sessions change
+  useEffect(() => {
+    const fetchSharedUserDetails = async () => {
       // Collect all unique user IDs from escalated_to_user_ids arrays
       const uniqueUserIds = new Set<string>();
-      data?.forEach(session => {
+      
+      activeSessions.forEach(session => {
         if (session.escalated_to_user_ids && session.escalated_to_user_ids.length > 0) {
           session.escalated_to_user_ids.forEach(userId => uniqueUserIds.add(userId));
         }
       });
       
-      // If we have shared users, fetch their details
-      if (uniqueUserIds.size > 0) {
-        const { data: userData, error: userError } = await supabase
+      if (uniqueUserIds.size === 0) return;
+      
+      try {
+        const { data, error } = await supabase
           .from('users')
           .select('id, full_name, email')
           .in('id', Array.from(uniqueUserIds));
           
-        if (!userError && userData) {
+        if (error) throw error;
+        
+        if (data) {
           // Create a map for quick lookup
           const userDetailsMap = new Map<string, { full_name: string | null; email: string }>();
-          userData.forEach(user => {
+          data.forEach(user => {
             userDetailsMap.set(user.id, { full_name: user.full_name, email: user.email });
           });
           setSharedUsersDetails(userDetailsMap);
-        } else {
-          console.error('Error fetching shared user details:', userError);
         }
+      } catch (error) {
+        console.error('Error fetching shared user details:', error);
       }
-    } catch (error) {
-      console.error('Error loading sessions:', error);
-      setError('Failed to load sessions');
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  };
-
-  // Handle claiming a session
-  const handleClaimSession = async (session: ActiveSession) => {
-    const success = await claimSession(session.session_id);
+    };
     
+    fetchSharedUserDetails();
+  }, [activeSessions]);
+
+  const handleClaimSession = async (sessionId: string) => {
+    const success = await claimSession(sessionId);
     if (success) {
-      toast.success(`Session for ${session.site_name} claimed successfully!`);
-      navigate(`/programs/${session.program_id}/sites/${session.site_id}/submissions/${session.submission_id}/edit`);
-      onClose(); // Close the drawer
-    } else {
-      toast.error(`Failed to claim session for ${session.site_name}`);
-      // Refresh sessions to get the latest state
-      loadSessions();
+      // Navigate to the submission edit page
+      const session = unclaimedSessions.find(s => s.session_id === sessionId);
+      if (session) {
+        navigate(`/programs/${session.program_id}/sites/${session.site_id}/submissions/${session.submission_id}/edit`);
+        onClose();
+      }
     }
   };
 
@@ -128,94 +140,106 @@ const ActiveSessionsDrawer: React.FC<ActiveSessionsDrawerProps> = ({ isOpen, onC
           
           {/* Content */}
           <div className="flex-1 overflow-y-auto p-4">
+            <div className="mb-4 flex justify-between items-center">
+              <p className="text-sm text-gray-600">
+                {activeSessions.length === 0 && unclaimedSessions.length === 0
+                  ? 'You have no active sessions' 
+                  : `You have ${activeSessions.length} active session${activeSessions.length !== 1 ? 's' : ''}`}
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setIsRefreshing(true);
+                  sessionManager.getActiveSessions()
+                    .then(sessions => {
+                      // Split sessions into active and unclaimed
+                      const active = sessions.filter(s => !s.is_unclaimed);
+                      const unclaimed = sessions.filter(s => s.is_unclaimed);
+                      
+                      setActiveSessions(active);
+                      setUnclaimedSessions(unclaimed);
+                      setHasActiveSessions(active.length > 0);
+                      setHasUnclaimedSessions(unclaimed.length > 0);
+                    })
+                    .catch(error => console.error('Error refreshing sessions:', error))
+                    .finally(() => setIsRefreshing(false));
+                }}
+                isLoading={isRefreshing}
+                disabled={isRefreshing}
+              >
+                Refresh
+              </Button>
+            </div>
+            
             {/* Unclaimed Sessions Section */}
-            {unclaimedSessions.length > 0 && (
+            {hasUnclaimedSessions && (
               <div className="mb-6">
-                <div className="mb-4 flex justify-between items-center">
-                  <div className="flex items-center">
-                    <Hand size={18} className="text-accent-600 mr-2" />
-                    <h3 className="font-medium">Unclaimed Sessions</h3>
-                  </div>
-                </div>
-                
+                <h3 className="text-md font-medium mb-3 flex items-center">
+                  <Plus size={16} className="mr-1 text-success-600" />
+                  Available Sessions
+                </h3>
                 <div className="space-y-3">
                   {unclaimedSessions.map((session) => (
                     <div 
-                      key={`unclaimed-${session.session_id}`} 
-                      className="border border-accent-200 rounded-lg p-3 bg-accent-50"
-                      data-testid={`drawer-unclaimed-session-${session.session_id}`}
+                      key={session.session_id} 
+                      className="border border-success-200 rounded-md p-3 bg-success-50 hover:bg-success-100 transition-colors"
                     >
                       <div className="flex justify-between items-center mb-2">
-                        <div>
-                          <h4 className="font-medium text-gray-900">{session.site_name}</h4>
-                          <p className="text-xs text-gray-500">{session.program_name}</p>
-                        </div>
-                        <div className="text-xs text-gray-500 flex items-center">
-                          <Clock size={12} className="mr-1" />
-                          {formatDistanceToNow(new Date(session.session_start_time), { addSuffix: true })}
+                        <div className="font-medium">{session.site_name}</div>
+                        <div className="text-xs text-success-700 px-2 py-0.5 rounded-full bg-success-100">
+                          Available
                         </div>
                       </div>
-                      
-                      <Button
-                        variant="accent"
-                        size="sm"
-                        onClick={() => handleClaimSession(session)}
-                        fullWidth
-                        testId={`drawer-claim-session-${session.session_id}`}
-                      >
-                        Grab This Session
-                      </Button>
+                      <div className="text-sm text-gray-600 mb-2">
+                        {session.program_name}
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <div className="text-xs text-gray-500">
+                          Created {formatDistanceToNow(new Date(session.session_start_time), { addSuffix: true })}
+                        </div>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleClaimSession(session.session_id)}
+                          className="!py-1 !px-2 text-xs"
+                        >
+                          Claim
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-          
+            
             {/* Active Sessions Section */}
-            <div>
-              <div className="mb-4 flex justify-between items-center">
-                <div className="flex items-center">
-                  <ClipboardList size={18} className="text-primary-600 mr-2" />
-                  <h3 className="font-medium">Active Sessions</h3>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={loadSessions}
-                  isLoading={isRefreshing}
-                  disabled={isRefreshing}
-                >
-                  Refresh
-                </Button>
+            {activeSessions.length === 0 && unclaimedSessions.length === 0 ? (
+              <div className="text-center py-12 bg-gray-50 rounded-lg">
+                <ClipboardList size={48} className="mx-auto text-gray-300 mb-3" />
+                <p className="text-gray-600 font-medium">No Active Sessions</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  When you start a submission, it will appear here.
+                </p>
               </div>
-              
-              {activeSessions.length === 0 && unclaimedSessions.length === 0 ? (
-                <div className="text-center py-12 bg-gray-50 rounded-lg">
-                  <ClipboardList size={48} className="mx-auto text-gray-300 mb-3" />
-                  <p className="text-gray-600 font-medium">No Active Sessions</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    When you start a submission, it will appear here.
-                  </p>
-                </div>
-              ) : activeSessions.length === 0 ? (
-                <div className="text-center py-6 bg-gray-50 rounded-lg">
-                  <p className="text-gray-600">You have no active sessions</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {activeSessions.map((session) => (
-                    <SessionProgress 
-                      key={session.session_id}
-                      session={session}
-                      variant="compact"
-                      sharedUsersDetails={sharedUsersDetails}
-                      currentSessionId={currentSessionId}
-                      onCloseDrawer={onClose}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+            ) : activeSessions.length > 0 ? (
+              <div className="space-y-4">
+                <h3 className="text-md font-medium mb-3 flex items-center">
+                  <Clock size={16} className="mr-1 text-primary-600" />
+                  Your Active Sessions
+                </h3>
+                {activeSessions.map((session) => (
+                  <SessionProgress 
+                    key={session.session_id}
+                    session={session}
+                    variant="compact"
+                    sharedUsersDetails={sharedUsersDetails}
+                    currentSessionId={null}
+                    onCloseDrawer={onClose}
+                  />
+                ))}
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

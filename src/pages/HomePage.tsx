@@ -1,6 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Leaf, Plus, CloudRain, Sun, Cloud, Clock, Building, ArrowRight, MapPin, Home, Hash } from 'lucide-react';
+import {
+  Leaf,
+  Plus,
+  CloudRain,
+  Sun,
+  Cloud,
+  Clock,
+  Building,
+  ArrowRight,
+  MapPin,
+  Home,
+  Hash,
+} from 'lucide-react';
 import Button from '../components/common/Button';
 import Card, { CardHeader, CardContent, CardFooter } from '../components/common/Card';
 import usePilotPrograms from '../hooks/usePilotPrograms';
@@ -14,6 +26,8 @@ import { PilotProgram, Site } from '../lib/types';
 import { toast } from 'react-toastify';
 import useWeather from '../hooks/useWeather';
 import AnalyticsChart from '../components/dashboard/AnalyticsChart';
+import UnclaimedSessionsCard from '../components/submissions/UnclaimedSessionsCard';
+import { useSessionStore } from '../stores/sessionStore';
 
 // Type for recent submission from the get_recent_submissions RPC
 interface RecentSubmission {
@@ -64,6 +78,9 @@ const HomePage = () => {
   );
   const [hasUserManuallySetWeather, setHasUserManuallySetWeather] = useState(false);
   const [isNewSubmissionModalOpen, setIsNewSubmissionModalOpen] = useState(false);
+  
+  // Get session store for unclaimed sessions
+  const { unclaimedSessions, isLoading: sessionsLoading } = useSessionStore();
   
   // Pre-select the first program when the page loads, but only once
   useEffect(() => {
@@ -258,6 +275,9 @@ const HomePage = () => {
         </div>
       </div>
       
+      {/* Unclaimed Sessions Card - NEW COMPONENT */}
+      <UnclaimedSessionsCard />
+      
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         {/* Program/Site Selection Card */}
         <Card className="md:col-span-2">
@@ -338,7 +358,9 @@ const HomePage = () => {
                           id={`site-${site.site_id}`}
                         >
                           <div className="flex justify-between items-start">
-                            <p className="font-medium truncate">{site.name}</p>
+                            <p className="font-medium truncate" title={site.name}>
+                              {site.name}
+                            </p>
                             <span className="text-xs bg-gray-100 text-gray-800 px-1 rounded">
                               {site.type}
                             </span>
@@ -399,7 +421,7 @@ const HomePage = () => {
                 id="weather-clear"
               >
                 <Sun className={`h-8 w-8 ${weatherType === 'Clear' ? 'text-yellow-600' : 'text-gray-400'}`} />
-                <span className="mt-2 text-sm font-medium">Clear</span>
+                <span className="mt-1 text-sm font-medium">Clear</span>
               </button>
               
               <button
@@ -414,7 +436,7 @@ const HomePage = () => {
                 id="weather-cloudy"
               >
                 <Cloud className={`h-8 w-8 ${weatherType === 'Cloudy' ? 'text-white' : 'text-gray-400'}`} />
-                <span className="mt-2 text-sm font-medium">Cloudy</span>
+                <span className="mt-1 text-sm font-medium">Cloudy</span>
               </button>
               
               <button
@@ -429,11 +451,11 @@ const HomePage = () => {
                 id="weather-rain"
               >
                 <CloudRain className={`h-8 w-8 ${weatherType === 'Rain' ? 'text-blue-600' : 'text-gray-400'}`} />
-                <span className="mt-2 text-sm font-medium">Rain</span>
+                <span className="mt-1 text-sm font-medium">Rain</span>
               </button>
             </div>
             
-            {/* Current Weather Data Display */}
+            {/* Show weather data if available */}
             {locationPermission === 'denied' ? (
               <div className="mt-4 border-t pt-4 text-center">
                 <p className="text-sm text-gray-600">
@@ -490,13 +512,15 @@ const HomePage = () => {
               <Clock className="mr-2 h-5 w-5 text-primary-500" />
               <h2 className="text-lg font-semibold">Recent Submissions</h2>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchRecentSubmissions}
-            >
-              Refresh
-            </Button>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchRecentSubmissions}
+              >
+                Refresh
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {submissionsLoading ? (

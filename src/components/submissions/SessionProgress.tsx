@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { BarChart4, Clock, User, Users, Hash } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { BarChart4, Clock, User, Users, Hash, Hand } from 'lucide-react';
 import Button from '../common/Button';
 import { ActiveSession } from '../../types/session';
 import { formatDistanceToNow, differenceInSeconds, set } from 'date-fns';
 import { useSessionStore } from '../../stores/sessionStore';
+import { toast } from 'react-toastify';
 
 interface SessionProgressProps {
   session: ActiveSession;
@@ -18,8 +19,7 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
   session, 
   variant = 'full',
   sharedUsersDetails = new Map(),
-  currentSessionId
-  ,
+  currentSessionId,
   onCloseDrawer
 }) => {
   const navigate = useNavigate();
@@ -27,6 +27,7 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
   const [timeRemainingString, setTimeRemainingString] = useState<string>("");
   const [formattedSharedUsers, setFormattedSharedUsers] = useState<string>("");
   const isCurrentSession = currentSessionId === session.session_id;
+  const { claimSession } = useSessionStore();
   
   // Calculate time until expiration (11:59:59 PM of the session start date)
   useEffect(() => {
@@ -143,6 +144,24 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
     navigate(`/programs/${session.program_id}/sites/${session.site_id}/submissions/${session.submission_id}/edit`);
   };
   
+  // Handle claiming an unclaimed session
+  const handleClaimSession = async () => {
+    const success = await claimSession(session.session_id);
+    
+    if (success) {
+      toast.success(`Session for ${session.site_name} claimed successfully!`);
+      
+      // Close the drawer if the callback is provided
+      if (onCloseDrawer) {
+        onCloseDrawer();
+      }
+      
+      navigate(`/programs/${session.program_id}/sites/${session.site_id}/submissions/${session.submission_id}/edit`);
+    } else {
+      toast.error(`Failed to claim session for ${session.site_name}`);
+    }
+  };
+  
   // Compact variant (for drawer items, etc.)
   if (variant === 'compact') {
     return (
@@ -194,14 +213,26 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
           <span className="text-xs text-gray-500">
             Updated {formatDistanceToNow(new Date(session.last_activity_time), { addSuffix: true })}
           </span>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleResumeSession}
-            className="!py-1 !px-2 text-xs"
-          >
-            Resume
-          </Button>
+          {session.is_unclaimed ? (
+            <Button
+              variant="accent"
+              size="sm"
+              onClick={handleClaimSession}
+              className="!py-1 !px-2 text-xs"
+              icon={<Hand size={12} />}
+            >
+              Grab
+            </Button>
+          ) : (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleResumeSession}
+              className="!py-1 !px-2 text-xs"
+            >
+              Resume
+            </Button>
+          )}
         </div>
       </div>
     );
@@ -234,13 +265,24 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
               {timeRemainingString}
             </span>
           )}
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleResumeSession}
-          >
-            Resume Session
-          </Button>
+          {session.is_unclaimed ? (
+            <Button
+              variant="accent"
+              size="sm"
+              onClick={handleClaimSession}
+              icon={<Hand size={16} />}
+            >
+              Grab Session
+            </Button>
+          ) : (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleResumeSession}
+            >
+              Resume Session
+            </Button>
+          )}
         </div>
       </div>
       

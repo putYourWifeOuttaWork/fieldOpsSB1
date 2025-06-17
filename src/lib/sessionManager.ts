@@ -62,6 +62,35 @@ export const createSubmissionSession = async (
 };
 
 /**
+ * Claim an unclaimed submission session
+ */
+export const claimSubmissionSession = async (sessionId: string): Promise<{success: boolean; message: string; session?: any}> => {
+  try {
+    logger.debug(`Claiming session: ${sessionId}`);
+    const { data, error } = await supabase.rpc('claim_submission_session', {
+      p_session_id: sessionId
+    });
+
+    if (error) {
+      logger.error('Error claiming session:', error);
+      return {
+        success: false,
+        message: error.message
+      };
+    }
+
+    logger.debug('Session claimed successfully:', data);
+    return data;
+  } catch (err) {
+    logger.error('Error in claimSubmissionSession:', err);
+    return {
+      success: false,
+      message: err instanceof Error ? err.message : 'Unknown error occurred'
+    };
+  }
+};
+
+/**
  * Updates a submission session's activity timestamp
  */
 export const updateSessionActivity = async (sessionId: string): Promise<boolean> => {
@@ -480,6 +509,7 @@ export const formatExpirationTime = (sessionStartTime: string): string => {
 
 export default {
   createSubmissionSession,
+  claimSubmissionSession,
   updateSessionActivity,
   completeSubmissionSession,
   cancelSubmissionSession,

@@ -100,12 +100,11 @@ const ActiveSessionsDrawer: React.FC<ActiveSessionsDrawerProps> = ({ isOpen, onC
     
     if (success) {
       toast.success('Session claimed successfully');
-      // First close the drawer
-      onClose();
-      // Then navigate to the submission edit page
+      // Navigate to the submission edit page
       const session = activeSessions.find(s => s.session_id === sessionId);
       if (session) {
         navigate(`/programs/${session.program_id}/sites/${session.site_id}/submissions/${session.submission_id}/edit`);
+        onClose();
       }
     } else {
       toast.error('Failed to claim session');

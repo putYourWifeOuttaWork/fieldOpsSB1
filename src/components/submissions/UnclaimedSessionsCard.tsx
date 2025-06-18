@@ -18,14 +18,20 @@ interface UnclaimedSessionsCardProps {
 const UnclaimedSessionsCard = ({ className = 'mb-6', limit = 5 }: UnclaimedSessionsCardProps) => {
   const navigate = useNavigate();
   const { 
-    unclaimedSessions, 
+    activeSessions, 
     claimSession, 
     isLoading, 
     setIsLoading, 
     error, 
-    setError 
+    setError,
+    setActiveSessions
   } = useSessionStore();
   const [refreshing, setRefreshing] = useState(false);
+
+  // Filter active sessions to get unclaimed ones (where opened_by_user_id is null)
+  const unclaimedSessions = Array.isArray(activeSessions) 
+    ? activeSessions.filter(session => session.opened_by_user_id === null)
+    : [];
 
   const refreshSessions = async () => {
     setRefreshing(true);
@@ -35,7 +41,7 @@ const UnclaimedSessionsCard = ({ className = 'mb-6', limit = 5 }: UnclaimedSessi
       
       if (error) throw error;
       
-      useSessionStore.getState().setActiveSessions(data || []);
+      setActiveSessions(data || []);
     } catch (err) {
       console.error('Error refreshing sessions:', err);
       setError('Failed to refresh sessions');
@@ -64,8 +70,7 @@ const UnclaimedSessionsCard = ({ className = 'mb-6', limit = 5 }: UnclaimedSessi
   }, []);
 
   // Get limited sessions to display
-  // Ensure unclaimedSessions is an array before calling slice
-  const displayedSessions = Array.isArray(unclaimedSessions) ? unclaimedSessions.slice(0, limit) : [];
+  const displayedSessions = unclaimedSessions.slice(0, limit);
 
   if (isLoading) {
     return (
@@ -133,7 +138,7 @@ const UnclaimedSessionsCard = ({ className = 'mb-6', limit = 5 }: UnclaimedSessi
           ))}
         </div>
         
-        {Array.isArray(unclaimedSessions) && unclaimedSessions.length > limit && (
+        {unclaimedSessions.length > limit && (
           <div className="mt-3 text-center">
             <Button 
               variant="outline" 

@@ -410,23 +410,6 @@ const ProgramDetailsModal = ({
                     >
                       Edit
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      icon={<Copy size={14} />}
-                      onClick={() => {
-                        onClose();
-                        // Delay to allow this modal to close before opening the clone modal
-                        setTimeout(() => {
-                          navigate(`/programs`);
-                          // This would ideally trigger the clone modal directly
-                          // but we'll let the PilotProgramsPage handle it
-                        }, 100);
-                      }}
-                      testId="clone-program-button"
-                    >
-                      Clone
-                    </Button>
                     {canManageUsers && (
                       <Button
                         variant="outline"

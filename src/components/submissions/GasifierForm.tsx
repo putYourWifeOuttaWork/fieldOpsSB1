@@ -128,7 +128,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
   submissionSessionId,
   onUpdate, 
   onRemove,
-  showRemoveButton,
+  showRemove,
   initialData,
   disabled = false,
   observationId

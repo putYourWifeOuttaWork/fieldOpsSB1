@@ -288,7 +288,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
     <div id={id} className="border border-gray-200 rounded-lg p-3 bg-gray-50" data-testid={`petri-form-${formId}`}>
       <div className="flex justify-between items-center mb-2">
         <div className="flex items-center">
-          <h4 className="font-medium text-gray-900">Petri Labeled: {formik.values.petriCode}</h4>
+          <h4 className="font-medium text-gray-900">Petri Sample #{index}</h4>
           {/* Toggle expand/collapse button */}
           <button 
             type="button"
@@ -337,7 +337,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
         <div className="space-y-2">
           <div>
             <label htmlFor={`petriCode-${formId}`} className="block text-sm font-medium text-gray-700 mb-1">
-              Petri Labeled
+              Petri Code
             </label>
             <div className="relative">
               <input
@@ -360,7 +360,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
           
           <div>
             <label htmlFor={`placement-${formId}`} className="block text-sm font-medium text-gray-700 mb-1">
-              Placement Of Dish In This Facility
+              Placement
             </label>
             <div className="relative">
               <div className="flex items-center">
@@ -375,7 +375,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
                   disabled={disabled}
                   data-testid={`petri-placement-select-${formId}`}
                 >
-                  <option value="">This Petri Can Be Found At</option>
+                  <option value="">Select placement</option>
                   {petriPlacementOptions.map((placement) => (
                     <option key={placement} value={placement}>{placement}</option>
                   ))}
@@ -394,7 +394,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
         <div className="space-y-2 animate-fade-in mt-3">
           <div>
             <label htmlFor={`fungicideUsed-${formId}`} className="block text-sm font-medium text-gray-700 mb-1">
-              Fungicide Used In This Facility?
+              Fungicide Used on Surrounding Plants
             </label>
             <div className="flex space-x-4" data-testid={`fungicide-radio-group-${formId}`}>
               <label className="inline-flex items-center">
@@ -433,7 +433,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
           
           <div>
             <label htmlFor={`surroundingWaterSchedule-${formId}`} className="block text-sm font-medium text-gray-700 mb-1">
-              Water Schedule In Zone, If Applicable
+              Water Schedule For Surrounding
             </label>
             <select
               id={`surroundingWaterSchedule-${formId}`}
@@ -445,7 +445,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
               disabled={disabled}
               data-testid={`water-schedule-select-${formId}`}
             >
-              <option value="">Select watering schedule</option>
+              <option value="">Select water schedule</option>
               {waterScheduleOptions.map(schedule => (
                 <option key={schedule} value={schedule}>{schedule}</option>
               ))}

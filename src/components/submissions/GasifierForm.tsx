@@ -128,7 +128,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
   submissionSessionId,
   onUpdate, 
   onRemove,
-  showRemove,
+  showRemoveButton,
   initialData,
   disabled = false,
   observationId
@@ -315,7 +315,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
     <div id={id} className="border border-gray-200 rounded-lg p-3 bg-gray-50" data-testid={`gasifier-form-${formId}`}>
       <div className="flex justify-between items-center mb-2">
         <div className="flex items-center">
-          <h4 className="font-medium text-gray-900">Bag Labeled: {formik.values.gasifierCode} </h4>
+          <h4 className="font-medium text-gray-900">Gasifier Sample #{index}</h4>
           {/* Toggle expand/collapse button */}
           <button 
             type="button"
@@ -383,29 +383,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
               <p className="mt-1 text-sm text-error-600">{formik.errors.gasifierCode}</p>
             )}
           </div>
-<div>
-            <label htmlFor={`directionalPlacement-${formId}`} className="block text-sm font-medium text-gray-700 mb-1">
-              Find Within Facility At:
-            </label>
-            <select
-              id={`directionalPlacement-${formId}`}
-              name="directionalPlacement"
-              className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-              value={formik.values.directionalPlacement || ''}
-              onChange={handleFieldChange}
-              onBlur={formik.handleBlur}
-              disabled={disabled}
-              data-testid={`directional-placement-select-${formId}`}
-            >
-              <option value="">Placement Within This Facility</option>
-              {directionalPlacementOptions.map((placement) => (
-                <option key={placement} value={placement}>{placement}</option>
-              ))}
-            </select>
-            {formik.touched.directionalPlacement && formik.errors.directionalPlacement && (
-              <p className="mt-1 text-sm text-error-600">{formik.errors.directionalPlacement}</p>
-            )}
-          </div>
+
           <div>
             <label htmlFor={`placementHeight-${formId}`} className="block text-sm font-medium text-gray-700 mb-1">
               Placement Height
@@ -420,7 +398,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
               disabled={disabled}
               data-testid={`placement-height-select-${formId}`}
             >
-              <option value="">Bag placement height</option>
+              <option value="">Select placement height</option>
               {placementHeightOptions.map((height) => (
                 <option key={height} value={height}>{height}</option>
               ))}
@@ -475,6 +453,30 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
                 <Info size={16} className="text-gray-400 hover:text-gray-600 cursor-help" />
               </div>
             </label>
+          </div>
+          
+          <div>
+            <label htmlFor={`directionalPlacement-${formId}`} className="block text-sm font-medium text-gray-700 mb-1">
+              Directional Placement
+            </label>
+            <select
+              id={`directionalPlacement-${formId}`}
+              name="directionalPlacement"
+              className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+              value={formik.values.directionalPlacement || ''}
+              onChange={handleFieldChange}
+              onBlur={formik.handleBlur}
+              disabled={disabled}
+              data-testid={`directional-placement-select-${formId}`}
+            >
+              <option value="">Select directional placement</option>
+              {directionalPlacementOptions.map((placement) => (
+                <option key={placement} value={placement}>{placement}</option>
+              ))}
+            </select>
+            {formik.touched.directionalPlacement && formik.errors.directionalPlacement && (
+              <p className="mt-1 text-sm text-error-600">{formik.errors.directionalPlacement}</p>
+            )}
           </div>
           
           <div>

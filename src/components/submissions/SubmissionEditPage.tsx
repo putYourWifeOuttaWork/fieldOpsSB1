@@ -1018,8 +1018,8 @@ const SubmissionEditPage = () => {
                 ))}
                 
                 {!isSessionReadOnly && (
-               <div className="flex justify-center mt-4">
-                      <Button
+                  <div className="flex justify-center mt-4">
+                    <Button
                       variant="outline"
                       onClick={addGasifierForm}
                       disabled={isSaving}

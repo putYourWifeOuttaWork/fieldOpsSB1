@@ -267,7 +267,6 @@ const SiteTemplateForm: React.FC<SiteTemplateFormProps> = ({
       minEfficaciousGasifierDensity: initialValues.minEfficaciousGasifierDensity || 2000,
       
       // Airflow dynamics
-      // Fix: Ensure boolean values are explicitly boolean
       hasDeadZones: initialValues.hasDeadZones !== undefined ? !!initialValues.hasDeadZones : false,
       numRegularlyOpenedPorts: initialValues.numRegularlyOpenedPorts || null,
       
@@ -688,59 +687,57 @@ const SiteTemplateForm: React.FC<SiteTemplateFormProps> = ({
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Interior Working Surface Types
-                </label>
-                <div className="space-y-2 border border-gray-300 rounded-md p-3">
-                  {interiorWorkingSurfaceOptions.map(option => (
-                    <div key={option} className="flex items-center">
-                      <input
-                        id={`surface-${option}`}
-                        name="interiorWorkingSurfaceTypes"
-                        type="checkbox"
-                        className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                        value={option}
-                        checked={formik.values.interiorWorkingSurfaceTypes?.includes(option) || false}
-                        onChange={(e) => {
-                          const currentValues = formik.values.interiorWorkingSurfaceTypes || [];
-                          if (e.target.checked) {
-                            formik.setFieldValue('interiorWorkingSurfaceTypes', [...currentValues, option]);
-                          } else {
-                            formik.setFieldValue(
-                              'interiorWorkingSurfaceTypes',
-                              currentValues.filter(val => val !== option)
-                            );
-                          }
-                        }}
-                      />
-                      <label htmlFor={`surface-${option}`} className="ml-2 text-sm text-gray-700">
-                        {option}
-                      </label>
-                    </div>
-                  ))}
-                </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Interior Working Surface Types
+              </label>
+              <div className="space-y-2 border border-gray-300 rounded-md p-3">
+                {interiorWorkingSurfaceOptions.map(option => (
+                  <div key={option} className="flex items-center">
+                    <input
+                      id={`surface-${option}`}
+                      name="interiorWorkingSurfaceTypes"
+                      type="checkbox"
+                      className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                      value={option}
+                      checked={formik.values.interiorWorkingSurfaceTypes?.includes(option) || false}
+                      onChange={(e) => {
+                        const currentValues = formik.values.interiorWorkingSurfaceTypes || [];
+                        if (e.target.checked) {
+                          formik.setFieldValue('interiorWorkingSurfaceTypes', [...currentValues, option]);
+                        } else {
+                          formik.setFieldValue(
+                            'interiorWorkingSurfaceTypes',
+                            currentValues.filter(val => val !== option)
+                          );
+                        }
+                      }}
+                    />
+                    <label htmlFor={`surface-${option}`} className="ml-2 text-sm text-gray-700">
+                      {option}
+                    </label>
+                  </div>
+                ))}
               </div>
-              
-              <div>
-                <label htmlFor="microbialRiskZone" className="block text-sm font-medium text-gray-700 mb-1">
-                  Microbial Risk Zone
-                </label>
-                <select
-                  id="microbialRiskZone"
-                  name="microbialRiskZone"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  value={formik.values.microbialRiskZone || ''}
-                  onChange={formik.handleChange}
-                  onBlur={formik.handleBlur}
-                >
-                  <option value="">Select risk zone</option>
-                  {microbialRiskZoneOptions.map(option => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
-              </div>
+            </div>
+            
+            <div>
+              <label htmlFor="microbialRiskZone" className="block text-sm font-medium text-gray-700 mb-1">
+                Microbial Risk Zone
+              </label>
+              <select
+                id="microbialRiskZone"
+                name="microbialRiskZone"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                value={formik.values.microbialRiskZone || ''}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+              >
+                <option value="">Select risk zone</option>
+                {microbialRiskZoneOptions.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -800,6 +797,7 @@ const SiteTemplateForm: React.FC<SiteTemplateFormProps> = ({
                 </label>
               </div>
               
+              {/* Add conditional rendering for quantityDeadzones */}
               {formik.values.hasDeadZones && (
                 <div>
                   <Input

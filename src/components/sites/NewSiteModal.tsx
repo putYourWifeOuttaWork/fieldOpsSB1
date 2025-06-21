@@ -130,6 +130,7 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
       numRegularlyOpenedPorts: '',
       numVents: '',
       ventPlacements: [] as string[],
+      quantityDeadzones: '',
     },
     validationSchema: (() => {
       switch (currentStep) {
@@ -194,6 +195,7 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
             // Airflow dynamics
             hasDeadZones: values.hasDeadZones,
             numRegularlyOpenedPorts: values.numRegularlyOpenedPorts ? Number(values.numRegularlyOpenedPorts) : undefined,
+            quantityDeadzones: values.hasDeadZones && values.quantityDeadzones ? Number(values.quantityDeadzones) : undefined,
             
             // Gasifier density
             minEfficaciousGasifierDensity: values.minEfficaciousGasifierDensity ? Number(values.minEfficaciousGasifierDensity) : 2000,
@@ -603,6 +605,21 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
                           Has Dead Zones (areas with poor air circulation)
                         </label>
                       </div>
+                      
+                      {/* Add conditional rendering for quantityDeadzones */}
+                      {formik.values.hasDeadZones && (
+                        <Input
+                          label="Quantity of Dead Zones"
+                          id="quantityDeadzones"
+                          name="quantityDeadzones"
+                          type="number"
+                          placeholder="Enter quantity (1-25)"
+                          value={formik.values.quantityDeadzones}
+                          onChange={formik.handleChange}
+                          onBlur={formik.handleBlur}
+                          error={formik.touched.quantityDeadzones && formik.errors.quantityDeadzones ? formik.errors.quantityDeadzones : undefined}
+                        />
+                      )}
                       
                       <Input
                         label="Number of Regularly Opened Ports/Doors"

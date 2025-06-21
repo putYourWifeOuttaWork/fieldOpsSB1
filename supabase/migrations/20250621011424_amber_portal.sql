@@ -553,6 +553,9 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+-- Drop the trigger if it already exists
+DROP TRIGGER IF EXISTS set_site_code_trigger ON sites;
+
 -- Create the trigger
 CREATE TRIGGER set_site_code_trigger
 BEFORE INSERT ON sites

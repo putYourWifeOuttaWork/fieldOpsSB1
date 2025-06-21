@@ -14,7 +14,7 @@
 */
 
 -- 1. Add site_code column to sites table
-ALTER TABLE sites ADD COLUMN site_code BIGINT;
+ALTER TABLE sites ADD COLUMN IF NOT EXISTS site_code BIGINT;
 
 -- 2. Create sequence for site_code starting at 1000001
 CREATE SEQUENCE IF NOT EXISTS site_code_seq START WITH 1000001;

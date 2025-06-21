@@ -272,18 +272,6 @@ BEGIN
     v_site_count := v_site_count + 1;
   END LOOP;
   
-  -- Add the creator as an Admin for the new program
-  INSERT INTO pilot_program_users (
-    program_id,
-    user_id,
-    role
-  )
-  VALUES (
-    v_new_program_id,
-    auth.uid(),
-    'Admin'
-  );
-  
   -- Return success response with details
   v_result := jsonb_build_object(
     'success', TRUE,

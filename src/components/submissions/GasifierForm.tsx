@@ -477,8 +477,6 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
             </label>
           </div>
           
-          
-          
           <div>
             <label htmlFor={`placementStrategy-${formId}`} className="block text-sm font-medium text-gray-700 mb-1">
               Placement Strategy

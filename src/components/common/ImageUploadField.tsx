@@ -286,7 +286,7 @@ const ImageUploadField = ({
             {uploadError ? (
               <div className="flex items-center text-error-600">
                 <AlertCircle size={16} className="mr-1" />
-                <span className="font-medium text-sm">Take A Picture By Clicking Here</span>
+                <span className="font-medium text-sm">Click Here Take A Photo</span>
               </div>
             ) : (
               <>

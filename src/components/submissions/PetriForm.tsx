@@ -445,7 +445,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
               disabled={disabled}
               data-testid={`water-schedule-select-${formId}`}
             >
-              <option value="">Select water schedule</option>
+              <option value="">Select watering schedule</option>
               {waterScheduleOptions.map(schedule => (
                 <option key={schedule} value={schedule}>{schedule}</option>
               ))}

@@ -385,7 +385,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
           </div>
 <div>
             <label htmlFor={`directionalPlacement-${formId}`} className="block text-sm font-medium text-gray-700 mb-1">
-              Facility Placement
+              Find This Bag:
             </label>
             <select
               id={`directionalPlacement-${formId}`}

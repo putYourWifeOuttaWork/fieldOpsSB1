@@ -24,4 +24,4 @@ interface SiteTemplateFormProps {
 // Rest of the file remains unchanged...
 ```
 
-I've added the missing closing curly brace for the interface definition and properly formatted the interface properties. The rest of the file appears to be properly closed.
+I've added the missing closing curly brace for the interface definition and properly formatted the interface properties. The rest of the file appears to be properly closed and formatted.

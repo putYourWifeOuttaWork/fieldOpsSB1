@@ -1018,7 +1018,7 @@ const SubmissionEditPage = () => {
                 ))}
                 
                 {!isSessionReadOnly && (
-                /*  <div className="flex justify-center mt-4">
+               <div className="flex justify-center mt-4">
                       <Button
                       variant="outline"
                       onClick={addGasifierForm}
@@ -1027,7 +1027,7 @@ const SubmissionEditPage = () => {
                     >
                       Add Gasifier Sample
                     </Button>
-                  </div> */
+                  </div>
                 )}
               </div>
             </CardContent>

@@ -71,15 +71,17 @@ const PilotProgramsPage = () => {
           <h1 className="text-2xl font-bold text-gray-900">Pilot Programs</h1>
           <p className="text-gray-600 mt-1">Select a program to begin work</p>
         </div>
-        <Button 
-          variant="primary"
-          size="sm" 
-          icon={<Plus md:mr-2 size={18} />}
-          onClick={() => setIsNewProgramModalOpen(true)}
-          testId="new-program-button"
-        ><span className= "hidden md:inline">
-          New Pilot Program</span>
-        </Button>
+        <div className="flex space-x-2">
+          <Button 
+            variant="primary" 
+            size="sm"
+            icon={<Plus md:mr-2 size={18} />}
+            onClick={() => setIsNewProgramModalOpen(true)}
+            testId="new-program-button"
+          >
+            <span className="hidden md:inline">New Pilot Program</span>
+          </Button>
+        </div>
       </div>
       
       <div className="relative mb-6">

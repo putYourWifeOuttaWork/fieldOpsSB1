@@ -433,7 +433,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
           
           <div>
             <label htmlFor={`surroundingWaterSchedule-${formId}`} className="block text-sm font-medium text-gray-700 mb-1">
-              Water Schedule For Surrounding
+              Water Schedule In Zone, If Applicable
             </label>
             <select
               id={`surroundingWaterSchedule-${formId}`}

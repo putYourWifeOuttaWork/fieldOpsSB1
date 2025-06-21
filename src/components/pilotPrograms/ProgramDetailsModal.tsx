@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { Calendar, FileText, Building, Users, Edit, Trash2, History } from 'lucide-react';
+import { Calendar, FileText, Building, Users, Edit, Trash2, History, Clock, Copy } from 'lucide-react';
 import Button from '../common/Button';
 import Input from '../common/Input';
 import Modal from '../common/Modal';
@@ -12,6 +12,7 @@ import useUserRole from '../../hooks/useUserRole';
 import { toast } from 'react-toastify';
 import ProgramUsersModal from '../users/ProgramUsersModal';
 import usePilotPrograms from '../../hooks/usePilotPrograms';
+import useProgramCloning from '../../hooks/useProgramCloning';
 
 interface ProgramDetailsModalProps {
   isOpen: boolean;
@@ -48,9 +49,42 @@ const ProgramDetailsModal = ({
   const navigate = useNavigate();
   const { updateProgram, deleteProgram } = usePilotPrograms();
   const { isAdmin, canManageUsers, canViewAuditLog } = useUserRole({ programId: program.program_id });
+  const { getProgramLineage, getProgramPhases, loading: cloningLoading } = useProgramCloning();
+  
   const [isEditing, setIsEditing] = useState(false);
   const [isUsersModalOpen, setIsUsersModalOpen] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [programPhases, setProgramPhases] = useState<any[] | null>(null);
+  const [programLineage, setProgramLineage] = useState<any[] | null>(null);
+  const [showPhases, setShowPhases] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
+  // Fetch program phases and lineage when modal is opened
+  const fetchProgramMetadata = async () => {
+    if (!program || !isOpen) return;
+    
+    setLoading(true);
+    try {
+      // Fetch phases
+      const phases = await getProgramPhases(program.program_id);
+      setProgramPhases(phases);
+      
+      // Fetch lineage
+      const lineage = await getProgramLineage(program.program_id);
+      setProgramLineage(lineage);
+    } catch (error) {
+      console.error('Error fetching program metadata:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Call fetchProgramMetadata when the modal is opened
+  useState(() => {
+    if (isOpen && program) {
+      fetchProgramMetadata();
+    }
+  });
   
   const formik = useFormik({
     initialValues: {
@@ -201,6 +235,23 @@ const ProgramDetailsModal = ({
                     >
                       Edit
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      icon={<Copy size={14} />}
+                      onClick={() => {
+                        onClose();
+                        // Delay to allow this modal to close before opening the clone modal
+                        setTimeout(() => {
+                          navigate(`/programs`);
+                          // This would ideally trigger the clone modal directly
+                          // but we'll let the PilotProgramsPage handle it
+                        }, 100);
+                      }}
+                      testId="clone-program-button"
+                    >
+                      Clone
+                    </Button>
                     {canManageUsers && (
                       <Button
                         variant="outline"
@@ -249,6 +300,62 @@ const ProgramDetailsModal = ({
                 </div>
               </div>
               
+              {/* Program Phases Section */}
+              {program.phases && Array.isArray(program.phases) && program.phases.length > 0 && (
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <h4 className="font-medium text-gray-700">Program Phases</h4>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowPhases(!showPhases)}
+                      icon={showPhases ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    >
+                      {showPhases ? 'Hide Phases' : 'Show Phases'}
+                    </Button>
+                  </div>
+                  
+                  {showPhases && (
+                    <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 animate-fade-in">
+                      {loading || cloningLoading ? (
+                        <div className="flex justify-center p-6">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                        </div>
+                      ) : programPhases && programPhases.length > 0 ? (
+                        <div className="space-y-3">
+                          {programPhases.map((phase, index) => (
+                            <div key={index} className="p-3 border border-gray-200 rounded bg-white">
+                              <div className="flex justify-between items-center mb-1">
+                                <div className="flex items-center">
+                                  <Clock size={16} className="text-primary-600 mr-2" />
+                                  <h5 className="font-medium">Phase {phase.phase_number}: {phase.label}</h5>
+                                </div>
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-primary-100 text-primary-800">
+                                  {phase.phase_type}
+                                </span>
+                              </div>
+                              <div className="grid grid-cols-2 gap-2 text-sm mt-2">
+                                <p className="text-gray-600">
+                                  <span className="font-medium">Start:</span> {format(new Date(phase.start_date), 'PP')}
+                                </p>
+                                <p className="text-gray-600">
+                                  <span className="font-medium">End:</span> {format(new Date(phase.end_date), 'PP')}
+                                </p>
+                              </div>
+                              {phase.notes && (
+                                <p className="text-sm text-gray-600 mt-2">{phase.notes}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-600 text-center py-4">No phases found for this program.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+              
               <div className="border rounded-lg p-4 bg-gray-50 mb-6">
                 <h4 className="font-medium mb-2">Program Statistics</h4>
                 <div className="grid grid-cols-2 gap-4">
@@ -269,6 +376,19 @@ const ProgramDetailsModal = ({
                   </div>
                 </div>
               </div>
+              
+              {/* Program Lineage */}
+              {program.cloned_from_program_id && (
+                <div className="mb-6 bg-primary-50 p-4 rounded-lg border border-primary-200">
+                  <h4 className="font-medium mb-2 flex items-center">
+                    <Copy className="text-primary-600 mr-2" size={16} />
+                    Program Lineage
+                  </h4>
+                  <p className="text-sm text-primary-700">
+                    This program was cloned from another program. View the full history in the program phases section.
+                  </p>
+                </div>
+              )}
               
               <div className="flex flex-col space-y-2">
                 <div className="flex items-center">

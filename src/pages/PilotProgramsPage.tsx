@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { usePilotProgramStore } from '../stores/pilotProgramStore';
 import { PilotProgram } from '../lib/types';
-import { Plus, Search, Calendar, Leaf, CheckCircle, XCircle, Info, ArrowLeft } from 'lucide-react';
+import { Plus, Search, Calendar, Leaf, CheckCircle, XCircle, Info, ArrowLeft, Copy } from 'lucide-react';
 import Card, { CardContent, CardFooter, CardHeader } from '../components/common/Card';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
@@ -11,7 +11,9 @@ import LoadingScreen from '../components/common/LoadingScreen';
 import { format } from 'date-fns';
 import NewPilotProgramModal from '../components/pilotPrograms/NewPilotProgramModal';
 import ProgramDetailsModal from '../components/pilotPrograms/ProgramDetailsModal';
+import CloneProgramModal from '../components/pilotPrograms/CloneProgramModal';
 import usePilotPrograms from '../hooks/usePilotPrograms';
+import PilotProgramCard from '../components/pilotPrograms/PilotProgramCard';
 
 const PilotProgramsPage = () => {
   const navigate = useNavigate();
@@ -21,6 +23,7 @@ const PilotProgramsPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isNewProgramModalOpen, setIsNewProgramModalOpen] = useState(false);
   const [selectedProgram, setSelectedProgramLocal] = useState<PilotProgram | null>(null);
+  const [programToClone, setProgramToClone] = useState<PilotProgram | null>(null);
   
   const handleProgramSelect = (program: PilotProgram) => {
     setSelectedProgram(program);
@@ -30,6 +33,19 @@ const PilotProgramsPage = () => {
   const handleProgramDetails = (program: PilotProgram, e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedProgramLocal(program);
+  };
+  
+  const handleProgramClone = (program: PilotProgram, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setProgramToClone(program);
+  };
+
+  const handleProgramCloned = async (newProgramId: string) => {
+    // Refresh the programs list
+    await refetchPrograms();
+    
+    // Navigate to the new program's sites page
+    navigate(`/programs/${newProgramId}/sites`);
   };
 
   const filteredPrograms = programs.filter(program => 
@@ -110,66 +126,14 @@ const PilotProgramsPage = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" data-testid="programs-grid">
           {filteredPrograms.map(program => (
-            <Card 
+            <PilotProgramCard
               key={program.program_id}
-              hoverable
-              onClick={() => handleProgramSelect(program)}
-              className="h-full"
+              program={program}
+              onView={handleProgramSelect}
+              onDetails={handleProgramDetails}
+              onClone={handleProgramClone}
               testId={`program-card-${program.program_id}`}
-            >
-              <CardHeader testId={`program-header-${program.program_id}`}>
-                <div className="flex justify-between items-start">
-                  <h3 className="text-lg font-semibold text-gray-900 truncate" title={program.name}>
-                    {program.name}
-                  </h3>
-                  <div className="flex items-center space-x-2">
-                    <span className={`pill ${
-                      program.status === 'active' 
-                        ? 'bg-success-100 text-success-800' 
-                        : 'bg-gray-100 text-gray-800'
-                    }`} data-testid={`program-status-${program.program_id}`}>
-                      {program.status === 'active' ? (
-                        <CheckCircle size={12} className="mr-1" />
-                      ) : (
-                        <XCircle size={12} className="mr-1" />
-                      )}
-                      {program.status.charAt(0).toUpperCase() + program.status.slice(1)}
-                    </span>
-                    <button 
-                      className="text-gray-500 hover:text-gray-700"
-                      onClick={(e) => handleProgramDetails(program, e)}
-                      aria-label="View program details"
-                      data-testid={`program-details-button-${program.program_id}`}
-                    >
-                      <Info size={16} />
-                    </button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent testId={`program-content-${program.program_id}`}>
-                <p className="text-gray-600 mb-4 line-clamp-3" title={program.description}>
-                  {program.description}
-                </p>
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <div className="flex items-center text-gray-600">
-                    <Calendar size={16} className="mr-1 flex-shrink-0" />
-                    <span className="truncate" title={`From: ${format(new Date(program.start_date), 'PP')}`}>
-                      From: {format(new Date(program.start_date), 'PP')}
-                    </span>
-                  </div>
-                  <div className="flex items-center text-gray-600">
-                    <Calendar size={16} className="mr-1 flex-shrink-0" />
-                    <span className="truncate" title={`To: ${format(new Date(program.end_date), 'PP')}`}>
-                      To: {format(new Date(program.end_date), 'PP')}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-between text-sm text-gray-500" testId={`program-footer-${program.program_id}`}>
-                <span>{program.total_sites} Sites</span>
-                <span>{program.total_submissions} Submissions</span>
-              </CardFooter>
-            </Card>
+            />
           ))}
         </div>
       )}
@@ -186,6 +150,15 @@ const PilotProgramsPage = () => {
           onClose={() => setSelectedProgramLocal(null)}
           program={selectedProgram}
           onDelete={refetchPrograms}
+        />
+      )}
+      
+      {programToClone && (
+        <CloneProgramModal
+          isOpen={!!programToClone}
+          onClose={() => setProgramToClone(null)}
+          program={programToClone}
+          onProgramCloned={handleProgramCloned}
         />
       )}
     </div>

@@ -147,8 +147,21 @@ export function useProgramCloning() {
       return data.lineage;
     } catch (err) {
       console.error('Error getting program lineage:', err);
-      const errorMessage = err instanceof Error ? err.message :
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      setError(errorMessage);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-Now, let's create the `CloneProgramModal` component that will be used to clone a program:
+  return {
+    cloneProgram,
+    getProgramPhases,
+    getProgramLineage,
+    loading,
+    error
+  };
+}
 
-<boltArtifact id="create-clone-program-modal" title="Create CloneProgramModal Component">
+export default useProgramCloning;

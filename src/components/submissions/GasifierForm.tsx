@@ -37,7 +37,7 @@ interface GasifierFormProps {
     isDirty: boolean;
   }) => void;
   onRemove: () => void;
-  showRemoveButton: boolean;
+  //showRemoveButton: boolean;
   initialData?: {
     gasifierCode: string;
     imageUrl?: string;

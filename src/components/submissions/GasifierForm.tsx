@@ -331,7 +331,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
           </button>
         </div>
         
-        {showRemoveButton && !disabled && (
+       {showRemoveButton && !disabled && (
           <Button 
             type="button" 
             variant="danger" 

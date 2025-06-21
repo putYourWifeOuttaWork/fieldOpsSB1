@@ -61,11 +61,11 @@ const SiteCard = ({
             <div>
               <h3 className="text-lg font-semibold text-gray-900 truncate" title={site.name}>
                 {site.name}
-              </h3>
+              </h3>Site 
               {site.site_code && (
                 <div className="flex items-center mt-1 text-sm text-gray-600">
                   <Hash size={14} className="mr-1 text-gray-500" />
-                  <span>Site {site.site_code}</span>
+                  <span>{site.site_code}</span>
                 </div>
               )}
             </div>

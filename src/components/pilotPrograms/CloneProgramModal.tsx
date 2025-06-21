@@ -484,7 +484,7 @@ const CloneProgramModal = ({
               <div className="flex items-center mb-4">
                 <AlertTriangle size={16} className="text-warning-500 mr-2" />
                 <p className="text-sm text-gray-700">
-                  Advanced options are not yet implemented. In the future, you'll be able to override specific site properties here.
+                  Advanced options are not yet implemented. In the future, you'll be able to map out this site with properties, compare the results of the prior program's site outcomes, and change all site properties here. For now, after clone, please visit the "Manage Template" area for each site, in order to update any further site detail that is different from the prior program!
                 </p>
               </div>
               

@@ -394,7 +394,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
         <div className="space-y-2 animate-fade-in mt-3">
           <div>
             <label htmlFor={`fungicideUsed-${formId}`} className="block text-sm font-medium text-gray-700 mb-1">
-              Fungicide Used on Surrounding Plants
+              Fungicide Used In This Facility?
             </label>
             <div className="flex space-x-4" data-testid={`fungicide-radio-group-${formId}`}>
               <label className="inline-flex items-center">

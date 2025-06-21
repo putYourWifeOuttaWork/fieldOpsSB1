@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { X, Building, Leaf, ArrowRight, ArrowLeft } from 'lucide-react';
@@ -229,6 +229,7 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
       const errors = formik.errors;
       const touched = formik.touched;
       let hasErrors = false;
+      let firstErrorField: string | null = null;
       
       switch (currentStep) {
         case 'basic':
@@ -237,6 +238,9 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
             // Touch the fields to show errors
             formik.setFieldTouched('name', true);
             formik.setFieldTouched('type', true);
+            
+            // Find the first field with an error
+            firstErrorField = errors.name ? 'name' : 'type';
           }
           break;
         case 'dimensions':
@@ -247,11 +251,22 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
             if (formik.values.width) formik.setFieldTouched('width', true);
             if (formik.values.height) formik.setFieldTouched('height', true);
             formik.setFieldTouched('minEfficaciousGasifierDensity', true);
+            
+            // Find the first field with an error
+            firstErrorField = errors.length ? 'length' : 
+                             errors.width ? 'width' : 
+                             errors.height ? 'height' : 
+                             'minEfficaciousGasifierDensity';
           }
           break;
         case 'facility':
           if (errors.primaryFunction || errors.constructionMaterial || errors.insulationType) {
             hasErrors = true;
+            
+            // Find the first field with an error
+            firstErrorField = errors.primaryFunction ? 'primaryFunction' : 
+                             errors.constructionMaterial ? 'constructionMaterial' : 
+                             'insulationType';
           }
           break;
         case 'environment':
@@ -261,11 +276,27 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
             if (formik.values.hvacSystemPresent) {
               formik.setFieldTouched('hvacSystemType', true);
             }
+            
+            // Find the first field with an error
+            firstErrorField = errors.hvacSystemType ? 'hvacSystemType' : 
+                             errors.irrigationSystemType ? 'irrigationSystemType' : 
+                             errors.lightingSystem ? 'lightingSystem' : 
+                             'ventilationStrategy';
           }
           break;
       }
       
       if (hasErrors) {
+        // Auto-scroll to the first error field if one was found
+        if (firstErrorField) {
+          setTimeout(() => {
+            const errorElement = document.getElementById(firstErrorField);
+            if (errorElement) {
+              errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              errorElement.focus();
+            }
+          }, 100);
+        }
         return;
       }
       

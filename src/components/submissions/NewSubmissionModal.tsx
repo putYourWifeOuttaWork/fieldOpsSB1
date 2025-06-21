@@ -17,6 +17,10 @@ import { useOnlineStatus } from '../../hooks/useOnlineStatus';
 import offlineStorage from '../../utils/offlineStorage';
 import ObservationListManager from '../forms/ObservationListManager';
 import TemplateWarningModal from './TemplateWarningModal';
+import { createLogger } from '../../utils/logger';
+
+// Create a logger for validation
+const logger = createLogger('ValidationScroll');
 
 // Schema for form validation
 const SubmissionSchema = Yup.object().shape({
@@ -139,15 +143,68 @@ const NewSubmissionModal = ({
           if (firstInvalidPetriIndex !== -1) {
             setIsPetriAccordionOpen(true);
             const formElement = document.getElementById(`petri-form-${petriForms[firstInvalidPetriIndex].id}`);
-            formElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (formElement) {
+              logger.debug(`Scrolling to invalid petri form at index ${firstInvalidPetriIndex}`);
+              formElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              // Try to focus the first input element within the form
+              const firstInput = formElement.querySelector('input, select, textarea');
+              if (firstInput && firstInput instanceof HTMLElement) {
+                setTimeout(() => {
+                  firstInput.focus();
+                }, 300);
+              }
+            }
             toast.error('Please complete all required fields in the Petri samples');
           } else if (firstInvalidGasifierIndex !== -1) {
             setIsGasifierAccordionOpen(true);
             const formElement = document.getElementById(`gasifier-form-${gasifierForms[firstInvalidGasifierIndex].id}`);
-            formElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            if (formElement) {
+              logger.debug(`Scrolling to invalid gasifier form at index ${firstInvalidGasifierIndex}`);
+              formElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              // Try to focus the first input element within the form
+              const firstInput = formElement.querySelector('input, select, textarea');
+              if (firstInput && firstInput instanceof HTMLElement) {
+                setTimeout(() => {
+                  firstInput.focus();
+                }, 300);
+              }
+            }
             toast.error('Please complete all required fields in the Gasifier samples');
           }
           
+          return;
+        }
+        
+        // Check site data validation
+        const siteDataErrors = Object.keys(formik.errors);
+        if (siteDataErrors.length > 0) {
+          setIsSiteDataAccordionOpen(true);
+          
+          // Find the first error field and scroll to it
+          const firstErrorField = siteDataErrors[0];
+          logger.debug(`Form has ${siteDataErrors.length} errors. First error: ${firstErrorField}`);
+          
+          // Touch the field to show the error
+          formik.setFieldTouched(firstErrorField, true);
+          
+          // Scroll to the field
+          setTimeout(() => {
+            const errorElement = document.getElementById(firstErrorField);
+            if (errorElement) {
+              logger.debug(`Scrolling to invalid field: ${firstErrorField}`);
+              errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              errorElement.focus();
+            } else {
+              // If element not found directly, try with id prefix for radio buttons
+              const siteDataSection = document.getElementById('site-data-section');
+              if (siteDataSection) {
+                logger.debug(`Scrolling to site data section`);
+                siteDataSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }
+          }, 100);
+          
+          toast.error('Please correct the errors in the Site Data section');
           return;
         }
         
@@ -713,6 +770,46 @@ const NewSubmissionModal = ({
       document.body.style.overflow = 'auto';
     };
   }, [isOpen]);
+  
+  // Validate form and scroll to first error
+  const validateAndScrollToError = () => {
+    let hasErrors = false;
+    let errorField: string | null = null;
+    
+    // Validate site data
+    const siteDataErrors = Object.keys(formik.errors);
+    if (siteDataErrors.length > 0) {
+      hasErrors = true;
+      errorField = siteDataErrors[0];
+      setIsSiteDataAccordionOpen(true);
+      
+      logger.debug(`Found ${siteDataErrors.length} site data errors. First error: ${errorField}`);
+      
+      // Touch the field to show the error
+      formik.setFieldTouched(errorField, true);
+      
+      // Scroll to the field
+      setTimeout(() => {
+        const errorElement = document.getElementById(errorField!);
+        if (errorElement) {
+          logger.debug(`Scrolling to site data field: ${errorField}`);
+          errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          errorElement.focus();
+        } else {
+          // If element not found directly, try scrolling to the section
+          const siteDataSection = document.getElementById('site-data-section');
+          if (siteDataSection) {
+            logger.debug(`Scrolling to site data section`);
+            siteDataSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+      }, 100);
+      
+      return hasErrors;
+    }
+    
+    return hasErrors;
+  };
 
   if (!isOpen) return null;
 
@@ -1108,6 +1205,24 @@ const NewSubmissionModal = ({
               isLoading={loading}
               disabled={!(formik.isValid && (petriForms.some(form => form.isValid) || gasifierForms.some(form => form.isValid)))}
               testId="submit-submission-button"
+              onClick={() => {
+                // Pre-validate to show errors before submit
+                if (!formik.isValid) {
+                  // Make sure all fields are touched to show errors
+                  Object.keys(formik.values).forEach(field => {
+                    formik.setFieldTouched(field, true);
+                  });
+                  
+                  // Check if validation scrolling is needed
+                  const needsScroll = validateAndScrollToError();
+                  if (needsScroll) {
+                    logger.debug('Validation errors found, form submission prevented');
+                    return false; // Prevent form submission if errors found
+                  }
+                }
+                
+                return true; // Allow form submission if no errors
+              }}
             >
               {existingSubmission ? 'Update Submission' : 'Create Submission'}
             </Button>

@@ -383,30 +383,30 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
               <p className="mt-1 text-sm text-error-600">{formik.errors.gasifierCode}</p>
             )}
           </div>
-
-          <div>
-            <label htmlFor={`placementHeight-${formId}`} className="block text-sm font-medium text-gray-700 mb-1">
-              Placement Height
+<div>
+            <label htmlFor={`directionalPlacement-${formId}`} className="block text-sm font-medium text-gray-700 mb-1">
+              Where This Bag Is Placed
             </label>
             <select
-              id={`placementHeight-${formId}`}
-              name="placementHeight"
+              id={`directionalPlacement-${formId}`}
+              name="directionalPlacement"
               className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-              value={formik.values.placementHeight || ''}
+              value={formik.values.directionalPlacement || ''}
               onChange={handleFieldChange}
               onBlur={formik.handleBlur}
               disabled={disabled}
-              data-testid={`placement-height-select-${formId}`}
+              data-testid={`directional-placement-select-${formId}`}
             >
-              <option value="">Select placement height</option>
-              {placementHeightOptions.map((height) => (
-                <option key={height} value={height}>{height}</option>
+              <option value="">Select directional placement</option>
+              {directionalPlacementOptions.map((placement) => (
+                <option key={placement} value={placement}>{placement}</option>
               ))}
             </select>
-            {formik.touched.placementHeight && formik.errors.placementHeight && (
-              <p className="mt-1 text-sm text-error-600">{formik.errors.placementHeight}</p>
+            {formik.touched.directionalPlacement && formik.errors.directionalPlacement && (
+              <p className="mt-1 text-sm text-error-600">{formik.errors.directionalPlacement}</p>
             )}
           </div>
+         
         </div>
       </div>
 
@@ -456,26 +456,26 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
           </div>
           
           <div>
-            <label htmlFor={`directionalPlacement-${formId}`} className="block text-sm font-medium text-gray-700 mb-1">
-              Directional Placement
+            <label htmlFor={`placementHeight-${formId}`} className="block text-sm font-medium text-gray-700 mb-1">
+              Placement Height
             </label>
             <select
-              id={`directionalPlacement-${formId}`}
-              name="directionalPlacement"
+              id={`placementHeight-${formId}`}
+              name="placementHeight"
               className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-              value={formik.values.directionalPlacement || ''}
+              value={formik.values.placementHeight || ''}
               onChange={handleFieldChange}
               onBlur={formik.handleBlur}
               disabled={disabled}
-              data-testid={`directional-placement-select-${formId}`}
+              data-testid={`placement-height-select-${formId}`}
             >
-              <option value="">Select directional placement</option>
-              {directionalPlacementOptions.map((placement) => (
-                <option key={placement} value={placement}>{placement}</option>
+              <option value="">Select placement height</option>
+              {placementHeightOptions.map((height) => (
+                <option key={height} value={height}>{height}</option>
               ))}
             </select>
-            {formik.touched.directionalPlacement && formik.errors.directionalPlacement && (
-              <p className="mt-1 text-sm text-error-600">{formik.errors.directionalPlacement}</p>
+            {formik.touched.placementHeight && formik.errors.placementHeight && (
+              <p className="mt-1 text-sm text-error-600">{formik.errors.placementHeight}</p>
             )}
           </div>
           

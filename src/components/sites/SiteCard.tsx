@@ -64,8 +64,8 @@ const SiteCard = ({
               </h3> 
               {site.site_code && (
                 <div className="flex items-center mt-1 text-sm text-gray-600">
-                  <Hash size={14} className="mr-1 text-gray-500" />
-                  <span>{site.site_code} Site</span>
+                  <Hash size={14} className="mr-1 text-gray-500" />Side Code
+                  <span>{site.site_code}</span>
                 </div>
               )}
             </div>

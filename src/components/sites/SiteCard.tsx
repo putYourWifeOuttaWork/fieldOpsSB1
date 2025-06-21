@@ -1,4 +1,4 @@
-import { Leaf, Trash2, Settings, Eye, MoreVertical, Zap, History } from 'lucide-react';
+import { Leaf, Trash2, Settings, Eye, MoreVertical, Zap, History, Hash } from 'lucide-react';
 import Card, { CardHeader, CardContent } from '../common/Card';
 import Button from '../common/Button';
 import { Site } from '../../lib/types';
@@ -58,9 +58,17 @@ const SiteCard = ({
       >
         <CardHeader testId={`site-header-${site.site_id}`}>
           <div className="flex justify-between items-start">
-            <h3 className="text-lg font-semibold text-gray-900 truncate" title={site.name}>
-              {site.name}
-            </h3>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 truncate" title={site.name}>
+                {site.name}
+              </h3>
+              {site.site_code && (
+                <div className="flex items-center mt-1 text-sm text-gray-600">
+                  <Hash size={14} className="mr-1 text-gray-500" />
+                  <span>Site #{site.site_code}</span>
+                </div>
+              )}
+            </div>
             <span className="pill bg-secondary-100 text-secondary-800" data-testid={`site-type-${site.site_id}`}>
               {site.type}
             </span>

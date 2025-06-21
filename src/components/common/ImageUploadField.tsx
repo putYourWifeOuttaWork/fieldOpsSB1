@@ -322,7 +322,7 @@ const ImageUploadField = ({
         )}
       </div>
       {(imageTouched && !imageFile && !imagePreview && !tempImageKey) || uploadError ? (
-        <p className="mt-1 text-sm text-error-600">{uploadError || 'Take a Picture Live - Img Required'}</p>
+        <center><p className="mt-1 text-sm text-error-600">{uploadError || 'Take a Picture Live - Img Required'}</p></center>
       ) : (
         <p className="text-xs text-gray-500 mt-1"><center>Just click and snap a picture! Nothing Else Required!</center></p>
       )}

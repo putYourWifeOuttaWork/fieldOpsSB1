@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import Button from '../common/Button';
@@ -7,6 +7,11 @@ import NewSitePetriTemplateForm from './NewSitePetriTemplateForm';
 import NewSiteGasifierTemplateForm from './NewSiteGasifierTemplateForm';
 import { PetriDefaults, GasifierDefaults, SubmissionDefaults } from '../../lib/types';
 import { v4 as uuidv4 } from 'uuid';
+import { countries, usStates, canadianProvinces, timezonesGrouped } from '../../lib/constants';
+import { createLogger } from '../../utils/logger';
+
+// Create a logger for this component
+const logger = createLogger('SiteTemplateForm');
 
 interface SiteTemplateFormProps {
   siteId: string;
@@ -40,6 +45,10 @@ interface SiteTemplateFormProps {
     microbialRiskZone?: string;
     quantityDeadzones?: number;
     ventilationStrategy?: string;
+    // Location
+    country?: string;
+    state?: string;
+    timezone?: string;
   };
   initialSiteName: string;
   onSubmit: (
@@ -201,7 +210,12 @@ const SiteTemplateFormSchema = Yup.object().shape({
   minEfficaciousGasifierDensity: Yup.number()
     .nullable()
     .min(100, 'Gasifier density must be at least 100 sq ft per bag')
-    .max(10000, 'Gasifier density is too large')
+    .max(10000, 'Gasifier density is too large'),
+  
+  // Location validation
+  country: Yup.string().required('Country is required'),
+  state: Yup.string().required('State/Province is required'),
+  timezone: Yup.string().required('Timezone is required'),
 });
 
 const SiteTemplateForm: React.FC<SiteTemplateFormProps> = ({
@@ -223,10 +237,33 @@ const SiteTemplateForm: React.FC<SiteTemplateFormProps> = ({
   const [isSectionExpanded, setIsSectionExpanded] = useState({
     siteInfo: true,
     environment: false,
+    location: false,
     petri: true,
     gasifier: true,
     recommendations: false
   });
+  
+  // Get user's current timezone
+  const getCurrentTimezone = useCallback(() => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch (e) {
+      logger.error('Error getting timezone:', e);
+      return 'America/New_York'; // Default fallback
+    }
+  }, []);
+
+  // Get US states or Canadian provinces based on selected country
+  const getStatesOrProvinces = useCallback(() => {
+    switch(formik.values.country) {
+      case 'United States':
+        return usStates;
+      case 'Canada':
+        return canadianProvinces;
+      default:
+        return [];
+    }
+  }, [formik.values.country]);
   
   // Initialize form values from props
   const formik = useFormik({
@@ -247,12 +284,12 @@ const SiteTemplateForm: React.FC<SiteTemplateFormProps> = ({
       cubicFootage: initialValues.cubicFootage || null,
       numVents: initialValues.numVents || null,
       ventPlacements: initialValues.ventPlacements || [],
-      // Fix: Ensure siteType is a string, never undefined or null
+      // Fix: Ensure string type for enum values that may be undefined
       siteType: initialValues.siteType || 'Greenhouse',
       primaryFunction: initialValues.primaryFunction || null,
       constructionMaterial: initialValues.constructionMaterial || null,
       insulationType: initialValues.insulationType || null,
-      // Fix: Ensure boolean values are explicitly boolean
+      // Fix: Ensure boolean type for boolean values
       hvacSystemPresent: initialValues.hvacSystemPresent !== undefined ? !!initialValues.hvacSystemPresent : false,
       hvacSystemType: initialValues.hvacSystemType || null,
       irrigationSystemType: initialValues.irrigationSystemType || null,
@@ -276,66 +313,116 @@ const SiteTemplateForm: React.FC<SiteTemplateFormProps> = ({
       quantityDeadzones: initialValues.quantityDeadzones || null,
       ventilationStrategy: initialValues.ventilationStrategy || null,
       
-      // Dimensions
-      length: initialValues.length || null,
-      width: initialValues.width || null,
-      height: initialValues.height || null,
-      
-      // Gasifier density
-      minEfficaciousGasifierDensity: initialValues.minEfficaciousGasifierDensity || 2000,
-      
-      // Airflow dynamics
-      hasDeadZones: initialValues.hasDeadZones !== undefined ? !!initialValues.hasDeadZones : false,
-      numRegularlyOpenedPorts: initialValues.numRegularlyOpenedPorts || null,
-      
-      // Environmental properties
-      interiorWorkingSurfaceTypes: initialValues.interiorWorkingSurfaceTypes || [],
-      microbialRiskZone: initialValues.microbialRiskZone || 'Medium',
-      quantityDeadzones: initialValues.quantityDeadzones || null,
-      ventilationStrategy: initialValues.ventilationStrategy || null,
+      // Location properties
+      country: initialValues.country || 'United States',
+      state: initialValues.state || '',
+      timezone: initialValues.timezone || getCurrentTimezone(),
     },
     validationSchema: SiteTemplateFormSchema,
+    validateOnMount: false,
+    validateOnChange: true,
     onSubmit: async (values) => {
-      // Create submission defaults object
-      const submissionDefaults: SubmissionDefaults = {
-        temperature: Number(values.temperature),
-        humidity: Number(values.humidity),
-        airflow: values.airflow as 'Open' | 'Closed',
-        odor_distance: values.odorDistance as '5-10ft' | '10-25ft' | '25-50ft' | '50-100ft' | '>100ft',
-        weather: values.weather as 'Clear' | 'Cloudy' | 'Rain',
-        notes: values.notes || null,
-        indoor_temperature: values.indoor_temperature ? Number(values.indoor_temperature) : null,
-        indoor_humidity: values.indoor_humidity ? Number(values.indoor_humidity) : null,
-      };
-      
-      // Collect site properties
-      const siteProperties = {
-        squareFootage: values.squareFootage,
-        cubicFootage: values.cubicFootage,
-        numVents: values.numVents,
-        ventPlacements: values.ventPlacements,
-        primaryFunction: values.primaryFunction,
-        constructionMaterial: values.constructionMaterial,
-        insulationType: values.insulationType,
-        hvacSystemPresent: values.hvacSystemPresent,
-        hvacSystemType: values.hvacSystemType,
-        irrigationSystemType: values.irrigationSystemType,
-        lightingSystem: values.lightingSystem,
-        length: values.length,
-        width: values.width,
-        height: values.height,
-        minEfficaciousGasifierDensity: values.minEfficaciousGasifierDensity,
-        hasDeadZones: values.hasDeadZones,
-        numRegularlyOpenedPorts: values.numRegularlyOpenedPorts,
-        interiorWorkingSurfaceTypes: values.interiorWorkingSurfaceTypes,
-        microbialRiskZone: values.microbialRiskZone,
-        quantityDeadzones: values.quantityDeadzones,
-        ventilationStrategy: values.ventilationStrategy,
-      };
-      
-      await onSubmit(values.siteName, submissionDefaults, petriTemplates, gasifierTemplates, siteProperties);
+      try {
+        logger.info('Submitting site template form', { siteId });
+        
+        // Create submission defaults object
+        const submissionDefaults: SubmissionDefaults = {
+          temperature: Number(values.temperature),
+          humidity: Number(values.humidity),
+          airflow: values.airflow as 'Open' | 'Closed',
+          odor_distance: values.odorDistance as '5-10ft' | '10-25ft' | '25-50ft' | '50-100ft' | '>100ft',
+          weather: values.weather as 'Clear' | 'Cloudy' | 'Rain',
+          notes: values.notes || null,
+          indoor_temperature: values.indoor_temperature ? Number(values.indoor_temperature) : null,
+          indoor_humidity: values.indoor_humidity ? Number(values.indoor_humidity) : null,
+        };
+        
+        // Collect site properties
+        const siteProperties = {
+          squareFootage: values.squareFootage,
+          cubicFootage: values.cubicFootage,
+          numVents: values.numVents,
+          ventPlacements: values.ventPlacements,
+          primaryFunction: values.primaryFunction,
+          constructionMaterial: values.constructionMaterial,
+          insulationType: values.insulationType,
+          hvacSystemPresent: values.hvacSystemPresent,
+          hvacSystemType: values.hvacSystemType,
+          irrigationSystemType: values.irrigationSystemType,
+          lightingSystem: values.lightingSystem,
+          length: values.length,
+          width: values.width,
+          height: values.height,
+          minEfficaciousGasifierDensity: values.minEfficaciousGasifierDensity,
+          hasDeadZones: values.hasDeadZones,
+          numRegularlyOpenedPorts: values.numRegularlyOpenedPorts,
+          interiorWorkingSurfaceTypes: values.interiorWorkingSurfaceTypes,
+          microbialRiskZone: values.microbialRiskZone,
+          quantityDeadzones: values.quantityDeadzones,
+          ventilationStrategy: values.ventilationStrategy,
+          country: values.country,
+          state: values.state,
+          timezone: values.timezone,
+        };
+        
+        logger.debug('Submitting with site properties:', siteProperties);
+        
+        await onSubmit(values.siteName, submissionDefaults, petriTemplates, gasifierTemplates, siteProperties);
+      } catch (error) {
+        logger.error('Error in form submission:', error);
+      }
     },
   });
+  
+  // Effect to auto-scroll to first validation error
+  const handleSubmitWithValidation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validate all fields
+    const errors = await formik.validateForm();
+    
+    // Touch all fields to show validation errors
+    Object.keys(formik.values).forEach(field => {
+      formik.setFieldTouched(field, true);
+    });
+    
+    // If there are errors, find the first error field and scroll to it
+    if (Object.keys(errors).length > 0) {
+      logger.debug('Form validation failed with errors:', errors);
+      
+      // Find the first error field
+      const firstErrorField = Object.keys(errors)[0];
+      
+      // Determine which section to expand based on the error field
+      let sectionToExpand: keyof typeof isSectionExpanded = 'siteInfo';
+      
+      if (['temperature', 'humidity', 'indoor_temperature', 'indoor_humidity', 'airflow', 'odorDistance', 'weather'].includes(firstErrorField)) {
+        sectionToExpand = 'environment';
+      } else if (['country', 'state', 'timezone'].includes(firstErrorField)) {
+        sectionToExpand = 'location';
+      }
+      
+      // Expand the section containing the error
+      setIsSectionExpanded(prev => ({
+        ...prev,
+        [sectionToExpand]: true
+      }));
+      
+      // Scroll to the error field
+      setTimeout(() => {
+        const errorElement = document.getElementById(firstErrorField);
+        if (errorElement) {
+          errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          errorElement.focus();
+        }
+      }, 100);
+      
+      return;
+    }
+    
+    // If validation passes, submit the form
+    await formik.handleSubmit();
+  };
   
   // Handle adding a new petri template
   const handleAddPetriTemplate = () => {
@@ -436,7 +523,7 @@ const SiteTemplateForm: React.FC<SiteTemplateFormProps> = ({
   }, [formik.values.length, formik.values.width, formik.values.height]);
   
   // Toggle a section's expanded state
-  const toggleSection = (section: 'siteInfo' | 'environment' | 'petri' | 'gasifier') => {
+  const toggleSection = (section: keyof typeof isSectionExpanded) => {
     setIsSectionExpanded({
       ...isSectionExpanded,
       [section]: !isSectionExpanded[section],
@@ -444,7 +531,7 @@ const SiteTemplateForm: React.FC<SiteTemplateFormProps> = ({
   };
 
   return (
-    <form onSubmit={formik.handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmitWithValidation} className="space-y-6">
       {/* Site Information Section */}
       <div className="border rounded-lg overflow-hidden">
         <button
@@ -538,6 +625,121 @@ const SiteTemplateForm: React.FC<SiteTemplateFormProps> = ({
                 error={formik.touched.cubicFootage && formik.errors.cubicFootage ? formik.errors.cubicFootage : undefined}
                 disabled={!!(formik.values.length && formik.values.width && formik.values.height)}
               />
+            </div>
+          </div>
+        )}
+      </div>
+      
+      {/* Location Details Section */}
+      <div className="border rounded-lg overflow-hidden">
+        <button
+          type="button"
+          className="w-full p-4 bg-gray-50 flex justify-between items-center text-left"
+          onClick={() => toggleSection('location')}
+        >
+          <span className="font-medium">Location Details</span>
+          {isSectionExpanded.location ? (
+            <span className="text-gray-500">▼</span>
+          ) : (
+            <span className="text-gray-500">▶</span>
+          )}
+        </button>
+        
+        {isSectionExpanded.location && (
+          <div className="p-4 space-y-4 animate-fade-in">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+                  Country <span className="text-error-600">*</span>
+                </label>
+                <select
+                  id="country"
+                  name="country"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  value={formik.values.country}
+                  onChange={(e) => {
+                    // Reset state when country changes
+                    formik.setFieldValue('country', e.target.value);
+                    formik.setFieldValue('state', '');
+                  }}
+                  onBlur={formik.handleBlur}
+                  required
+                >
+                  <option value="">Select country</option>
+                  {countries.map((country) => (
+                    <option key={country} value={country}>{country}</option>
+                  ))}
+                </select>
+                {formik.touched.country && formik.errors.country && (
+                  <p className="mt-1 text-sm text-error-600">{formik.errors.country}</p>
+                )}
+              </div>
+              
+              <div>
+                <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
+                  State/Province <span className="text-error-600">*</span>
+                </label>
+                {(formik.values.country === 'United States' || formik.values.country === 'Canada') ? (
+                  <select
+                    id="state"
+                    name="state"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    value={formik.values.state}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    required
+                  >
+                    <option value="">Select state/province</option>
+                    {getStatesOrProvinces().map((state) => (
+                      <option key={state} value={state}>{state}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    id="state"
+                    name="state"
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    placeholder="Enter state/province"
+                    value={formik.values.state}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    required
+                  />
+                )}
+                {formik.touched.state && formik.errors.state && (
+                  <p className="mt-1 text-sm text-error-600">{formik.errors.state}</p>
+                )}
+              </div>
+            </div>
+            
+            <div>
+              <label htmlFor="timezone" className="block text-sm font-medium text-gray-700 mb-1">
+                Timezone <span className="text-error-600">*</span>
+              </label>
+              <select
+                id="timezone"
+                name="timezone"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                value={formik.values.timezone}
+                onChange={formik.handleChange}
+                onBlur={formik.handleBlur}
+                required
+              >
+                <option value="">Select timezone</option>
+                {timezonesGrouped.map((group) => (
+                  <optgroup key={group.group} label={group.group}>
+                    {group.zones.map((zone) => (
+                      <option key={zone.value} value={zone.value}>
+                        {zone.label} ({zone.value})
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+              {formik.touched.timezone && formik.errors.timezone && (
+                <p className="mt-1 text-sm text-error-600">{formik.errors.timezone}</p>
+              )}
             </div>
           </div>
         )}
@@ -797,7 +999,6 @@ const SiteTemplateForm: React.FC<SiteTemplateFormProps> = ({
                 </label>
               </div>
               
-              {/* Add conditional rendering for quantityDeadzones */}
               {formik.values.hasDeadZones && (
                 <div>
                   <Input
@@ -1087,15 +1288,6 @@ const SiteTemplateForm: React.FC<SiteTemplateFormProps> = ({
           type="submit"
           variant="primary"
           isLoading={isLoading}
-         // Debug logging to see why the button might be disabled
-         onClick={() => {
-           console.log('Form submission attempted');
-           console.log('isLoading:', isLoading);
-           console.log('formik.isValid:', formik.isValid);
-           console.log('formik.dirty:', formik.dirty);
-           console.log('formik.errors:', formik.errors);
-           console.log('formik.touched:', formik.touched);
-         }}
         >
           Save Template
         </Button>

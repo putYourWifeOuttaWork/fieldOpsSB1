@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { X, Building, Leaf, ArrowRight, ArrowLeft } from 'lucide-react';
+import { X, Building, Leaf, ArrowRight, ArrowLeft, MapPin, Clock } from 'lucide-react';
 import Button from '../common/Button';
 import Input from '../common/Input';
 import Card, { CardContent } from '../common/Card';
@@ -12,6 +12,11 @@ import NewSitePetriTemplateForm from './NewSitePetriTemplateForm';
 import NewSiteGasifierTemplateForm from './NewSiteGasifierTemplateForm';
 import { PetriDefaults, GasifierDefaults } from '../../lib/types';
 import { v4 as uuidv4 } from 'uuid';
+import { countries, usStates, canadianProvinces, timezonesGrouped } from '../../lib/constants';
+import { createLogger } from '../../utils/logger';
+
+// Create a logger for this component
+const logger = createLogger('NewSiteModal');
 
 interface NewSiteModalProps {
   isOpen: boolean;
@@ -21,7 +26,7 @@ interface NewSiteModalProps {
 }
 
 // Define the steps in the site creation process
-type Step = 'basic' | 'dimensions' | 'facility' | 'environment' | 'templates';
+type Step = 'basic' | 'dimensions' | 'facility' | 'environment' | 'location' | 'templates';
 
 // Define the validation schema for the basic info step
 const BasicInfoSchema = Yup.object().shape({
@@ -79,6 +84,16 @@ const EnvironmentSchema = Yup.object().shape({
     .nullable(),
 });
 
+// Define the validation schema for the location details step
+const LocationSchema = Yup.object().shape({
+  country: Yup.string()
+    .required('Country is required'),
+  state: Yup.string()
+    .required('State/Province is required'),
+  timezone: Yup.string()
+    .required('Timezone is required'),
+});
+
 const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModalProps) => {
   const { createSite, loading } = useSites(programId);
   const { selectedProgram } = usePilotProgramStore();
@@ -95,6 +110,27 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
       setGasifierTemplates([]);
     }
   }, [isOpen]);
+  
+  // Get user's current timezone
+  const getCurrentTimezone = () => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch (e) {
+      return 'America/New_York'; // Default fallback
+    }
+  };
+
+  // Get US states or Canadian provinces based on selected country
+  const getStatesOrProvinces = () => {
+    switch(formik.values.country) {
+      case 'United States':
+        return usStates;
+      case 'Canada':
+        return canadianProvinces;
+      default:
+        return [];
+    }
+  };
   
   // Initialize the form with Formik
   const formik = useFormik({
@@ -131,6 +167,11 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
       numVents: '',
       ventPlacements: [] as string[],
       quantityDeadzones: '',
+      
+      // Location details
+      country: 'United States',
+      state: '',
+      timezone: getCurrentTimezone(),
     },
     validationSchema: (() => {
       switch (currentStep) {
@@ -142,6 +183,8 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
           return FacilitySchema;
         case 'environment':
           return EnvironmentSchema;
+        case 'location':
+          return LocationSchema;
         default:
           return Yup.object();
       }
@@ -150,6 +193,12 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
     validateOnChange: true,
     onSubmit: async (values) => {
       try {
+        logger.info('Creating new site', {
+          siteName: values.name, 
+          siteType: values.type,
+          programId
+        });
+
         // Prepare petri and gasifier templates
         const petriDefaultsArray = petriTemplates.map(template => {
           const { id, ...rest } = template;
@@ -202,10 +251,21 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
             
             // Ventilation strategy
             ventilationStrategy: values.ventilationStrategy || undefined,
+            
+            // Location details
+            country: values.country,
+            state: values.state,
+            timezone: values.timezone,
           }
         );
         
         if (site) {
+          logger.info('Site created successfully', {
+            siteName: site.name,
+            siteId: site.site_id,
+            programId
+          });
+          
           toast.success(`Site "${values.name}" created successfully`);
           if (onSiteCreated) {
             onSiteCreated(site);
@@ -213,7 +273,7 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
           onClose();
         }
       } catch (error) {
-        console.error('Error creating site:', error);
+        logger.error('Error creating site:', error);
         toast.error('Failed to create site');
       }
     },
@@ -284,6 +344,19 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
                              'ventilationStrategy';
           }
           break;
+        case 'location':
+          if (errors.country || errors.state || errors.timezone) {
+            hasErrors = true;
+            formik.setFieldTouched('country', true);
+            formik.setFieldTouched('state', true);
+            formik.setFieldTouched('timezone', true);
+            
+            // Find the first field with an error
+            firstErrorField = errors.country ? 'country' : 
+                             errors.state ? 'state' : 
+                             'timezone';
+          }
+          break;
       }
       
       if (hasErrors) {
@@ -312,6 +385,9 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
           setCurrentStep('environment');
           break;
         case 'environment':
+          setCurrentStep('location');
+          break;
+        case 'location':
           setCurrentStep('templates');
           break;
         case 'templates':
@@ -320,7 +396,7 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
           break;
       }
     } catch (error) {
-      console.error('Validation error:', error);
+      logger.error('Validation error:', error);
     }
   };
   
@@ -336,8 +412,11 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
       case 'environment':
         setCurrentStep('facility');
         break;
-      case 'templates':
+      case 'location':
         setCurrentStep('environment');
+        break;
+      case 'templates':
+        setCurrentStep('location');
         break;
     }
   };
@@ -421,6 +500,10 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
       case 'environment':
         // Only require HVAC type if HVAC is present
         return formik.values.hvacSystemPresent && !formik.values.hvacSystemType;
+      case 'location':
+        // Require country, state/province, and timezone
+        return !formik.values.country || !formik.values.state || !formik.values.timezone ||
+               !!formik.errors.country || !!formik.errors.state || !!formik.errors.timezone;
       case 'templates':
         return loading;
       default:
@@ -465,7 +548,7 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === 'dimensions' ? 'bg-primary-100 text-primary-600' : 'bg-gray-100'}`}>
                 <Leaf size={16} />
               </div>
-              <span className="ml-2 text-sm font-medium hidden sm:inline">Dimensions & Density</span>
+              <span className="ml-2 text-sm font-medium hidden sm:inline">Dimensions</span>
             </div>
             <div className="flex-1 h-px bg-gray-200 mx-2"></div>
             <div 
@@ -475,7 +558,7 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === 'facility' ? 'bg-primary-100 text-primary-600' : 'bg-gray-100'}`}>
                 <Building size={16} />
               </div>
-              <span className="ml-2 text-sm font-medium hidden sm:inline">Facility Details</span>
+              <span className="ml-2 text-sm font-medium hidden sm:inline">Facility</span>
             </div>
             <div className="flex-1 h-px bg-gray-200 mx-2"></div>
             <div 
@@ -485,7 +568,17 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === 'environment' ? 'bg-primary-100 text-primary-600' : 'bg-gray-100'}`}>
                 <Leaf size={16} />
               </div>
-              <span className="ml-2 text-sm font-medium hidden sm:inline">Environmental Controls</span>
+              <span className="ml-2 text-sm font-medium hidden sm:inline">Environment</span>
+            </div>
+            <div className="flex-1 h-px bg-gray-200 mx-2"></div>
+            <div 
+              className={`flex items-center ${currentStep === 'location' ? 'text-primary-600' : 'text-gray-400'}`}
+              onClick={() => currentStep !== 'location' && currentStep !== 'basic' && currentStep !== 'dimensions' && currentStep !== 'facility' && currentStep !== 'environment' && setCurrentStep('location')}
+            >
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === 'location' ? 'bg-primary-100 text-primary-600' : 'bg-gray-100'}`}>
+                <MapPin size={16} />
+              </div>
+              <span className="ml-2 text-sm font-medium hidden sm:inline">Location</span>
             </div>
             <div className="flex-1 h-px bg-gray-200 mx-2"></div>
             <div 
@@ -495,7 +588,7 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentStep === 'templates' ? 'bg-primary-100 text-primary-600' : 'bg-gray-100'}`}>
                 <Leaf size={16} />
               </div>
-              <span className="ml-2 text-sm font-medium hidden sm:inline">Observation Templates</span>
+              <span className="ml-2 text-sm font-medium hidden sm:inline">Templates</span>
             </div>
           </div>
         </div>
@@ -966,6 +1059,134 @@ const NewSiteModal = ({ isOpen, onClose, programId, onSiteCreated }: NewSiteModa
                     </p>
                   </div>
                 )}
+              </div>
+            )}
+            
+            {/* Location Details Step */}
+            {currentStep === 'location' && (
+              <div className="space-y-4 animate-fade-in">
+                <h3 className="font-medium text-lg">Location Details</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Provide information about the site's geographical location and timezone.
+                </p>
+                
+                {formik.values.type === 'Transport' && (
+                  <div className="p-4 bg-warning-50 border border-warning-200 rounded-lg mb-4">
+                    <div className="flex items-center mb-2">
+                      <MapPin className="text-warning-600 mr-2" size={18} />
+                      <h4 className="font-medium text-warning-800">Transport Facility Notice</h4>
+                    </div>
+                    <p className="text-sm text-warning-700">
+                      For transport facilities, these location details are especially important as they help track the
+                      movement of the facility. Please ensure accurate timezone information for proper data timestamps.
+                    </p>
+                  </div>
+                )}
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="country" className="block text-sm font-medium text-gray-700 mb-1">
+                      Country <span className="text-error-600">*</span>
+                    </label>
+                    <select
+                      id="country"
+                      name="country"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      value={formik.values.country}
+                      onChange={(e) => {
+                        // Reset state when country changes
+                        formik.setFieldValue('country', e.target.value);
+                        formik.setFieldValue('state', '');
+                      }}
+                      onBlur={formik.handleBlur}
+                      required
+                    >
+                      <option value="">Select country</option>
+                      {countries.map((country) => (
+                        <option key={country} value={country}>{country}</option>
+                      ))}
+                    </select>
+                    {formik.touched.country && formik.errors.country && (
+                      <p className="mt-1 text-sm text-error-600">{formik.errors.country}</p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
+                      State/Province <span className="text-error-600">*</span>
+                    </label>
+                    <select
+                      id="state"
+                      name="state"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                      value={formik.values.state}
+                      onChange={formik.handleChange}
+                      onBlur={formik.handleBlur}
+                      required
+                      disabled={!formik.values.country || (formik.values.country !== 'United States' && formik.values.country !== 'Canada')}
+                    >
+                      <option value="">Select state/province</option>
+                      {getStatesOrProvinces().map((state) => (
+                        <option key={state} value={state}>{state}</option>
+                      ))}
+                    </select>
+                    {formik.touched.state && formik.errors.state && (
+                      <p className="mt-1 text-sm text-error-600">{formik.errors.state}</p>
+                    )}
+                    {formik.values.country && formik.values.country !== 'United States' && formik.values.country !== 'Canada' && (
+                      <input
+                        type="text"
+                        id="state"
+                        name="state"
+                        className="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                        placeholder="Enter state or province"
+                        value={formik.values.state}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                      />
+                    )}
+                  </div>
+                </div>
+                
+                <div>
+                  <label htmlFor="timezone" className="block text-sm font-medium text-gray-700 mb-1">
+                    Timezone <span className="text-error-600">*</span>
+                  </label>
+                  <select
+                    id="timezone"
+                    name="timezone"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    value={formik.values.timezone}
+                    onChange={formik.handleChange}
+                    onBlur={formik.handleBlur}
+                    required
+                  >
+                    <option value="">Select timezone</option>
+                    {timezonesGrouped.map((group) => (
+                      <optgroup key={group.group} label={group.group}>
+                        {group.zones.map((zone) => (
+                          <option key={zone.value} value={zone.value}>
+                            {zone.label} ({zone.value})
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                  {formik.touched.timezone && formik.errors.timezone && (
+                    <p className="mt-1 text-sm text-error-600">{formik.errors.timezone}</p>
+                  )}
+                </div>
+                
+                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg mt-4">
+                  <div className="flex items-center mb-2">
+                    <Clock className="text-primary-600 mr-2" size={18} />
+                    <h4 className="font-medium">Timezone Importance</h4>
+                  </div>
+                  <p className="text-sm text-gray-700">
+                    Accurate timezone information ensures that all timestamps for submissions and observations are correctly
+                    recorded, which is crucial for data analysis and correlation with environmental factors.
+                  </p>
+                </div>
               </div>
             )}
             

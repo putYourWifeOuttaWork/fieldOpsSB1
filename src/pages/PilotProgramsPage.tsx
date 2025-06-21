@@ -68,7 +68,7 @@ const PilotProgramsPage = () => {
           <ArrowLeft size={20} className="text-gray-500" />
         </button>
         <div className="flex-grow">
-          <h1 className="text-2xl font-bold text-gray-700"><span className= "hidden md:inline">Pilot Programs</span></h1>
+          <h1 className="text-2xl font-bold text-gray-700">Pilot Programs</h1>
           <p className="text-gray-600 mt-1">Select a program to begin work</p>
         </div>
         <Button 
@@ -77,8 +77,8 @@ const PilotProgramsPage = () => {
           icon={<Plus md:mr-2 size={18} />}
           onClick={() => setIsNewProgramModalOpen(true)}
           testId="new-program-button"
-        >
-          New Pilot Program
+        ><span className= "hidden md:inline">
+          New Pilot Program</span>
         </Button>
       </div>
       

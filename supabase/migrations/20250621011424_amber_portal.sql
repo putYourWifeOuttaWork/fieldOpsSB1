@@ -279,7 +279,7 @@ BEGIN
     'program_id', v_new_program_id,
     'site_count', v_site_count,
     'site_mapping', v_site_mapping
-  );
+  ); 
   
   RETURN v_result;
 EXCEPTION

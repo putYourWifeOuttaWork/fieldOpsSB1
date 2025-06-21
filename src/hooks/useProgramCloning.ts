@@ -67,5 +67,12 @@ export function useProgramCloning() {
           p_new_description: newDescription,
           p_new_start_date: newStartDate,
           p_new_en
+        }
+        )
+      )
+    }
+  }
+  )
+}
 
 <boltArtifact id="update-pilot-program-card" title="Add Clone Button to PilotProgramCard">

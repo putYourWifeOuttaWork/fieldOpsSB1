@@ -21,7 +21,6 @@ import useCompanies from '../hooks/useCompanies';
 import LoadingScreen from '../components/common/LoadingScreen';
 import { format } from 'date-fns';
 import { supabase } from '../lib/supabaseClient';
-import NewSubmissionModal from '../components/submissions/NewSubmissionModal';
 import { PilotProgram, Site } from '../lib/types';
 import { toast } from 'react-toastify';
 import useWeather from '../hooks/useWeather';
@@ -77,7 +76,6 @@ const HomePage = () => {
     userCompany?.default_weather || 'Clear'
   );
   const [hasUserManuallySetWeather, setHasUserManuallySetWeather] = useState(false);
-  const [isNewSubmissionModalOpen, setIsNewSubmissionModalOpen] = useState(false);
   
   // Get session store for unclaimed sessions
   const { unclaimedSessions, isLoading: sessionsLoading } = useSessionStore();
@@ -245,22 +243,16 @@ const HomePage = () => {
     }
   };
   
-  // Handle quick log button - open the modal for new submissions
+  // Handle quick log button - navigate to new submission page
   const handleQuickLog = useCallback(() => {
     if (!selectedSite || !selectedProgram) {
       toast.warning('Please select a site first');
       return;
     }
     
-    // Open the modal directly
-    setIsNewSubmissionModalOpen(true);
-  }, [selectedSite, selectedProgram]);
-  
-  // Handle submission created
-  const handleSubmissionCreated = useCallback(() => {
-    fetchRecentSubmissions();
-    setIsNewSubmissionModalOpen(false);
-  }, [fetchRecentSubmissions]);
+    // Navigate directly to the new submission page with the selected program and site
+    navigate(`/programs/${selectedProgram.program_id}/sites/${selectedSite.site_id}/new-submission`);
+  }, [selectedSite, selectedProgram, navigate]);
   
   if (programsLoading || companyLoading) {
     return <LoadingScreen />;
@@ -372,6 +364,21 @@ const HomePage = () => {
                       ))}
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Create New Submission Button - Only show if site is selected */}
+              {selectedSite && (
+                <div className="flex justify-center mt-4">
+                  <Button
+                    variant="primary"
+                    onClick={handleQuickLog}
+                    icon={<Plus size={16} />}
+                    disabled={weatherLoading}
+                    testId="create-new-submission-button"
+                  >
+                    Create New Submission
+                  </Button>
                 </div>
               )}
             </div>
@@ -647,25 +654,6 @@ const HomePage = () => {
             />
           </CardContent>
         </Card>
-      )}
-
-      {/* New Submission Modal */}
-      {selectedSite && (
-        <NewSubmissionModal
-          isOpen={isNewSubmissionModalOpen}
-          onClose={() => setIsNewSubmissionModalOpen(false)}
-          siteId={selectedSite.site_id}
-          siteName={selectedSite.name}
-          programId={selectedProgram?.program_id || ''}
-          onSubmissionCreated={handleSubmissionCreated}
-          selectedSite={selectedSite}
-          companyDefaultWeather={userCompany?.default_weather}
-          initialWeather={weatherType}
-          initialTemperature={currentConditions?.temp}
-          initialHumidity={currentConditions?.RelativeHumidity}
-          weatherData={currentConditions}
-          isWeatherLoading={weatherLoading}
-        />
       )}
     </div>
   );

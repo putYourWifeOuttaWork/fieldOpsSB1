@@ -72,7 +72,8 @@ const PilotProgramsPage = () => {
           <p className="text-gray-600 mt-1">Select a program to begin work</p>
         </div>
         <Button 
-          variant="primary" 
+          variant="primary"
+          size="sm" 
           icon={<Plus size={18} />}
           onClick={() => setIsNewProgramModalOpen(true)}
           testId="new-program-button"

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle, XCircle, Info, Copy } from 'lucide-react';
+import { CheckCircle, XCircle, Info, Copy, Tag } from 'lucide-react';
 import Card, { CardHeader, CardContent, CardFooter } from '../common/Card';
 import Button from '../common/Button';
 import { PilotProgram } from '../../lib/types';
@@ -23,6 +23,26 @@ const PilotProgramCard = ({
 }: PilotProgramCardProps) => {
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
+
+  // Extract phase information if available
+  const getPhaseInfo = () => {
+    if (!program.phases || !Array.isArray(program.phases) || program.phases.length === 0) {
+      return null;
+    }
+
+    // Get the last phase (most recent)
+    const lastPhase = program.phases[program.phases.length - 1];
+    
+    if (!lastPhase) return null;
+    
+    return {
+      phaseNumber: lastPhase.phase_number,
+      phaseType: lastPhase.phase_type,
+      phaseLabel: lastPhase.label || `Phase ${lastPhase.phase_number}`
+    };
+  };
+  
+  const phaseInfo = getPhaseInfo();
 
   return (
     <Card 
@@ -73,6 +93,15 @@ const PilotProgramCard = ({
         </div>
       </CardHeader>
       <CardContent testId={`program-content-${program.program_id}`}>
+        {phaseInfo && (
+          <div className="flex items-center mb-2">
+            <Tag size={14} className="text-primary-600 mr-1" />
+            <span className="text-sm font-medium">
+              Phase {phaseInfo.phaseNumber} {phaseInfo.phaseType && `(${phaseInfo.phaseType})`}
+            </span>
+          </div>
+        )}
+        
         <p className="text-gray-600 mb-4 line-clamp-3" title={program.description}>
           {program.description}
         </p>

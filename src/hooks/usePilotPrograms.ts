@@ -1,10 +1,14 @@
 import { useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuthStore } from '../stores/authStore';
-import { PilotProgram } from '../lib/types';
+import { PilotProgram, ProgramPhase } from '../lib/types';
 import { toast } from 'react-toastify';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { withRetry } from '../utils/helpers';
+import { createLogger } from '../utils/logger';
+
+// Create a logger for pilot programs operations
+const logger = createLogger('PilotPrograms');
 
 interface UsePilotProgramsResult {
   programs: PilotProgram[];
@@ -17,6 +21,31 @@ interface UsePilotProgramsResult {
   fetchPilotProgram: (programId: string) => Promise<PilotProgram | null>;
 }
 
+// Helper function to sort programs by phase
+const sortProgramsByPhase = (programs: PilotProgram[]) => {
+  return [...programs].sort((a, b) => {
+    // Get latest phase number from program a
+    const aPhaseNumber = a.phases && Array.isArray(a.phases) && a.phases.length > 0
+      ? Math.max(...a.phases.map(p => typeof p.phase_number === 'number' ? p.phase_number : parseInt(p.phase_number as any, 10)))
+      : 0;
+    
+    // Get latest phase number from program b
+    const bPhaseNumber = b.phases && Array.isArray(b.phases) && b.phases.length > 0
+      ? Math.max(...b.phases.map(p => typeof p.phase_number === 'number' ? p.phase_number : parseInt(p.phase_number as any, 10)))
+      : 0;
+    
+    // Sort by phase number first
+    if (aPhaseNumber !== bPhaseNumber) {
+      return aPhaseNumber - bPhaseNumber;
+    }
+    
+    // If phase numbers are the same, sort by end date (ascending)
+    const aEndDate = new Date(a.end_date).getTime();
+    const bEndDate = new Date(b.end_date).getTime();
+    return aEndDate - bEndDate;
+  });
+};
+
 export const usePilotPrograms = (): UsePilotProgramsResult => {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
@@ -27,21 +56,23 @@ export const usePilotPrograms = (): UsePilotProgramsResult => {
     queryFn: async () => {
       if (!user) return [];
       
-      console.log('Fetching programs for user:', user.id);
+      logger.debug('Fetching programs for user:', user.id);
       const { data, error } = await withRetry(() => 
         supabase
           .from('pilot_programs')
-          .select('*')
+          .select('*, phases')
           .order('name')
-      );
+      , 'fetchPilotPrograms');
         
       if (error) {
-        console.error('Error fetching programs:', error);
+        logger.error('Error fetching programs:', error);
         throw error;
       }
       
-      console.log(`Successfully fetched ${data?.length || 0} programs`);
-      return data || [];
+      logger.debug(`Successfully fetched ${data?.length || 0} programs`);
+      
+      // Sort programs by phase number and then end date
+      return sortProgramsByPhase(data || []);
     },
     enabled: !!user,
     staleTime: 0, // Always refetch on window focus
@@ -51,35 +82,35 @@ export const usePilotPrograms = (): UsePilotProgramsResult => {
   // Use React Query for fetching a single program
   const fetchPilotProgram = async (programId: string): Promise<PilotProgram | null> => {
     try {
-      console.log(`Fetching program with ID: ${programId}`);
+      logger.debug(`Fetching program with ID: ${programId}`);
       
       // Check cache first
       const cachedProgram = queryClient.getQueryData<PilotProgram>(['program', programId]);
       if (cachedProgram) {
-        console.log('Using cached program data:', cachedProgram.name);
+        logger.debug('Using cached program data:', cachedProgram.name);
         return cachedProgram;
       }
       
       const { data, error } = await withRetry(() => 
         supabase
           .from('pilot_programs')
-          .select('*')
+          .select('*, phases')
           .eq('program_id', programId)
           .single()
-      );
+      , `fetchPilotProgram(${programId})`);
         
       if (error) {
-        console.error('Error fetching pilot program:', error);
+        logger.error('Error fetching pilot program:', error);
         return null;
       }
       
-      console.log('Successfully fetched program:', data?.name);
+      logger.debug('Successfully fetched program:', data?.name);
       
       // Cache the result
       queryClient.setQueryData(['program', programId], data);
       return data;
     } catch (err) {
-      console.error('Error in fetchPilotProgram:', err);
+      logger.error('Error in fetchPilotProgram:', err);
       return null;
     }
   };
@@ -94,6 +125,17 @@ export const usePilotPrograms = (): UsePilotProgramsResult => {
       
       const calculatedStatus = 
         (today >= startDate && today <= endDate) ? 'active' : 'inactive';
+        
+      // Create initial phases array with Phase 1
+      const initialPhase: ProgramPhase = {
+        phase_number: 1,
+        phase_type: 'control', // First phase is typically control
+        label: 'Phase 1 (control)',
+        start_date: programData.start_date,
+        end_date: programData.end_date
+      };
+        
+      const phases = [initialPhase];
       
       const { data, error } = await withRetry(() => 
         supabase
@@ -102,11 +144,12 @@ export const usePilotPrograms = (): UsePilotProgramsResult => {
             ...programData,
             status: calculatedStatus,
             total_submissions: 0,
-            total_sites: 0
+            total_sites: 0,
+            phases: phases
           })
           .select()
           .single()
-      );
+      , 'createProgram');
       
       if (error) throw error;
       return data;
@@ -121,7 +164,7 @@ export const usePilotPrograms = (): UsePilotProgramsResult => {
       toast.success('Program created successfully');
     },
     onError: (error) => {
-      console.error('Error creating program:', error);
+      logger.error('Error creating program:', error);
       toast.error(`Failed to create program: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   });
@@ -136,7 +179,7 @@ export const usePilotPrograms = (): UsePilotProgramsResult => {
           .eq('program_id', programId)
           .select()
           .single()
-      );
+      , `updateProgram(${programId})`);
       
       if (error) throw error;
       return data;
@@ -156,7 +199,7 @@ export const usePilotPrograms = (): UsePilotProgramsResult => {
       toast.success('Program updated successfully');
     },
     onError: (error) => {
-      console.error('Error updating program:', error);
+      logger.error('Error updating program:', error);
       toast.error(`Failed to update program: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   });
@@ -169,7 +212,7 @@ export const usePilotPrograms = (): UsePilotProgramsResult => {
           .from('pilot_programs')
           .delete()
           .eq('program_id', programId)
-      );
+      , `deleteProgram(${programId})`);
       
       if (error) throw error;
       return programId;
@@ -187,7 +230,7 @@ export const usePilotPrograms = (): UsePilotProgramsResult => {
       toast.success('Program deleted successfully');
     },
     onError: (error) => {
-      console.error('Error deleting program:', error);
+      logger.error('Error deleting program:', error);
       toast.error(`Failed to delete program: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   });
@@ -222,7 +265,7 @@ export const usePilotPrograms = (): UsePilotProgramsResult => {
 
   // Force refetch programs
   const refetchPrograms = useCallback(async () => {
-    console.log("Forcing program refetch");
+    logger.debug("Forcing program refetch");
     await queryClient.invalidateQueries({queryKey: ['programs']});
   }, [queryClient]);
 

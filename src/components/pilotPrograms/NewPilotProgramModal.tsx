@@ -7,6 +7,7 @@ import Input from '../common/Input';
 import Modal from '../common/Modal';
 import { usePilotProgramStore } from '../../stores/pilotProgramStore';
 import usePilotPrograms from '../../hooks/usePilotPrograms';
+import { differenceInDays } from 'date-fns';
 
 interface NewPilotProgramModalProps {
   isOpen: boolean;
@@ -30,7 +31,19 @@ const NewPilotProgramSchema = Yup.object().shape({
       Yup.ref('startDate'),
       'End date must be after start date'
     )
+    .test(
+      'min-duration',
+      'Program must be at least 7 days long',
+      function (endDate) {
+        const { startDate } = this.parent;
+        if (!startDate || !endDate) return true;
+        return differenceInDays(new Date(endDate), new Date(startDate)) >= 7;
+      }
+    )
     .required('End date is required'),
+  phaseType: Yup.string()
+    .oneOf(['control', 'experimental'], 'Phase type must be either control or experimental')
+    .required('Phase type is required')
 });
 
 const NewPilotProgramModal = ({ isOpen, onClose, onProgramCreated }: NewPilotProgramModalProps) => {
@@ -43,6 +56,7 @@ const NewPilotProgramModal = ({ isOpen, onClose, onProgramCreated }: NewPilotPro
       description: '',
       startDate: new Date().toISOString().split('T')[0],
       endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      phaseType: 'control'
     },
     validationSchema: NewPilotProgramSchema,
     onSubmit: async (values, { setSubmitting, resetForm }) => {
@@ -52,6 +66,15 @@ const NewPilotProgramModal = ({ isOpen, onClose, onProgramCreated }: NewPilotPro
           description: values.description,
           start_date: values.startDate,
           end_date: values.endDate,
+          phases: [
+            {
+              phase_number: 1,
+              phase_type: values.phaseType,
+              label: `Phase 1 (${values.phaseType})`,
+              start_date: values.startDate,
+              end_date: values.endDate
+            }
+          ]
         });
         
         if (newProgram) {
@@ -140,6 +163,43 @@ const NewPilotProgramModal = ({ isOpen, onClose, onProgramCreated }: NewPilotPro
             onBlur={formik.handleBlur}
             error={formik.touched.endDate && formik.errors.endDate ? formik.errors.endDate : undefined}
           />
+        </div>
+
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Initial Phase Type
+          </label>
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              type="button"
+              className={`flex flex-col items-center p-3 rounded-md transition-colors ${
+                formik.values.phaseType === 'control'
+                  ? 'bg-secondary-100 border-secondary-200 border text-secondary-800'
+                  : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
+              }`}
+              onClick={() => formik.setFieldValue('phaseType', 'control')}
+            >
+              <span className="mt-1 text-sm font-medium">Control</span>
+            </button>
+            
+            <button
+              type="button"
+              className={`flex flex-col items-center p-3 rounded-md transition-colors ${
+                formik.values.phaseType === 'experimental'
+                  ? 'bg-primary-100 border-primary-200 border text-primary-800'
+                  : 'bg-gray-50 hover:bg-gray-100 border border-gray-200'
+              }`}
+              onClick={() => formik.setFieldValue('phaseType', 'experimental')}
+            >
+              <span className="mt-1 text-sm font-medium">Experimental</span>
+            </button>
+          </div>
+          {formik.touched.phaseType && formik.errors.phaseType && (
+            <p className="mt-1 text-sm text-error-600">{formik.errors.phaseType}</p>
+          )}
+          <p className="mt-1 text-xs text-gray-500">
+            This will set Phase 1's type. Control phases are typically the baseline, while experimental phases test new variables.
+          </p>
         </div>
         
         <div className="mb-6">

@@ -15,6 +15,9 @@ interface CloneProgramParams {
   newDescription: string;
   newStartDate: string;
   newEndDate: string;
+  newPhaseNumber?: number;
+  newPhaseType?: 'control' | 'experimental';
+  newPhaseLabel?: string;
   siteOverrides?: Record<string, any>;
 }
 
@@ -58,12 +61,17 @@ export function useProgramCloning() {
     newDescription,
     newStartDate,
     newEndDate,
+    newPhaseNumber,
+    newPhaseType = 'experimental',
+    newPhaseLabel,
     siteOverrides = {}
   }: CloneProgramParams) => {
     logger.info(`Starting program clone operation`, {
       sourceProgramId: sourceProgram.program_id,
       sourceProgramName: sourceProgram.name,
-      newName
+      newName,
+      newPhaseNumber,
+      newPhaseType
     });
     
     setLoading(true);
@@ -75,6 +83,9 @@ export function useProgramCloning() {
         newName,
         newStartDate,
         newEndDate,
+        newPhaseNumber,
+        newPhaseType,
+        newPhaseLabel,
         siteOverrides: Object.keys(siteOverrides).length > 0 ? 'present' : 'none'
       });
       
@@ -87,6 +98,9 @@ export function useProgramCloning() {
           p_new_description: newDescription,
           p_new_start_date: newStartDate,
           p_new_end_date: newEndDate,
+          p_new_phase_number: newPhaseNumber,
+          p_new_phase_type: newPhaseType,
+          p_new_phase_label: newPhaseLabel,
           p_site_overrides: siteOverrides
         })
       , `cloneProgram(${sourceProgram.program_id})`);
@@ -107,7 +121,9 @@ export function useProgramCloning() {
       logger.info(`Program cloned successfully:`, {
         newProgramId: data.program_id,
         siteCount: data.site_count,
-        siteMappingCount: Object.keys(data.site_mapping).length
+        siteMappingCount: Object.keys(data.site_mapping).length,
+        phaseNumber: data.phase_number,
+        phaseType: data.phase_type
       });
       logger.debug(`Site mapping details:`, data.site_mapping);
       

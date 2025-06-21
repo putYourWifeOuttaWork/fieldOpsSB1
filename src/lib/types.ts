@@ -10,7 +10,19 @@ export type User = {
   };
 };
 
-export type PilotProgram = Database['public']['Tables']['pilot_programs']['Row'];
+export type PilotProgram = Database['public']['Tables']['pilot_programs']['Row'] & {
+  phases?: ProgramPhase[];
+};
+
+export type ProgramPhase = {
+  phase_number: number;
+  phase_type: 'control' | 'experimental';
+  label: string;
+  start_date: string;
+  end_date: string;
+  notes?: string;
+};
+
 export type Site = Database['public']['Tables']['sites']['Row'] & {
   interior_working_surface_types?: InteriorWorkingSurfaceType[];
   microbial_risk_zone?: MicrobialRiskZone;

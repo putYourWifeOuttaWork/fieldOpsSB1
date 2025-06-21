@@ -469,7 +469,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
               disabled={disabled}
               data-testid={`directional-placement-select-${formId}`}
             >
-              <option value="">Select directional placement</option>
+              <option value="">Facility Placement</option>
               {directionalPlacementOptions.map((placement) => (
                 <option key={placement} value={placement}>{placement}</option>
               ))}

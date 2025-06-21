@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { number } from 'yup';
 import { Calendar, FileText, Building, Users, Edit, Trash2, History, Clock, Copy, ChevronDown, ChevronUp, Tag } from 'lucide-react';
 import Button from '../common/Button';
 import Input from '../common/Input';
@@ -52,7 +51,7 @@ const ProgramSchema = Yup.object().shape({
       }
     )
     .required('End date is required'),
-  phaseNumber: number()
+  phaseNumber: Yup.number()
     .integer('Phase number must be an integer')
     .positive('Phase number must be positive')
     .required('Phase number is required'),
@@ -373,7 +372,7 @@ const ProgramDetailsModal = ({
                     <p className="mt-1 text-sm text-error-600">{formik.errors.phaseLabel}</p>
                   )}
                   <p className="mt-1 text-xs text-gray-500">
-                    Leave blank to use default format: "Phase {number} ({type})"
+                    Leave blank to use default format: "Phase {formik.values.phaseNumber} ({formik.values.phaseType})"
                   </p>
                 </div>
               </div>

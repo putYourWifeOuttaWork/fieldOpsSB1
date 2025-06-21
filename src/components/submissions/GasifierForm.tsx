@@ -398,7 +398,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
               disabled={disabled}
               data-testid={`placement-height-select-${formId}`}
             >
-              <option value="">Select placement height</option>
+              <option value="">Bag placement height</option>
               {placementHeightOptions.map((height) => (
                 <option key={height} value={height}>{height}</option>
               ))}

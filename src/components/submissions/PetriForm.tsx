@@ -288,7 +288,8 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
     <div id={id} className="border border-gray-200 rounded-lg p-3 bg-gray-50" data-testid={`petri-form-${formId}`}>
       <div className="flex justify-between items-center mb-2">
         <div className="flex items-center">
-          <h4 className="font-medium text-gray-900">Petri Sample #{formik.values.petriCode}</h4>
+          <h4 className="font-medium text-gray-900">Code {formik.values.petriCode}</h4>
+          <p>Click on the image uploader, select "Take a Photo" and snap the pic. No need to upload anything at all.</p>
           {/* Toggle expand/collapse button */}
           <button 
             type="button"

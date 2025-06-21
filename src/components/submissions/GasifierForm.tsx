@@ -385,7 +385,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
           </div>
 <div>
             <label htmlFor={`directionalPlacement-${formId}`} className="block text-sm font-medium text-gray-700 mb-1">
-              Find This Within Facility:
+              Find Within Facility:
             </label>
             <select
               id={`directionalPlacement-${formId}`}

@@ -324,7 +324,7 @@ const ImageUploadField = ({
       {(imageTouched && !imageFile && !imagePreview && !tempImageKey) || uploadError ? (
         <p className="mt-1 text-sm text-error-600">{uploadError || 'Image is required'}</p>
       ) : (
-        <p className="text-xs text-gray-500 mt-1">JPEG, PNG, GIF or WebP up to 5MB</p>
+        <p className="text-xs text-gray-500 mt-1">Just click and snap a picture! Nothing Else Required!</p>
       )}
     </div>
   );

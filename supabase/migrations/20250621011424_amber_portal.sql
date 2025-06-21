@@ -20,10 +20,10 @@ ALTER TABLE sites ADD COLUMN IF NOT EXISTS site_code BIGINT;
 CREATE SEQUENCE IF NOT EXISTS site_code_seq START WITH 1000001;
 
 -- 3. Add cloned_from_program_id to pilot_programs table
-ALTER TABLE pilot_programs ADD COLUMN cloned_from_program_id UUID REFERENCES pilot_programs(program_id);
+ALTER TABLE pilot_programs ADD COLUMN IF NOT EXISTS cloned_from_program_id UUID REFERENCES pilot_programs(program_id);
 
 -- 4. Add phases JSONB field to pilot_programs table
-ALTER TABLE pilot_programs ADD COLUMN phases JSONB;
+ALTER TABLE pilot_programs ADD COLUMN IF NOT EXISTS phases JSONB;
 
 -- 5. Create function to generate a new site_code
 CREATE OR REPLACE FUNCTION generate_site_code()

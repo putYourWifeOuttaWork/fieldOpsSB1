@@ -288,7 +288,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
     <div id={id} className="border border-gray-200 rounded-lg p-3 bg-gray-50" data-testid={`petri-form-${formId}`}>
       <div className="flex justify-between items-center mb-2">
         <div className="flex items-center">
-          <h4 className="font-medium text-gray-900">Petri Dish Label: {formik.values.petriCode}</h4>
+          <h4 className="font-medium text-gray-900">Petri Labeled: {formik.values.petriCode}</h4>
           {/* Toggle expand/collapse button */}
           <button 
             type="button"
@@ -337,6 +337,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
         <div className="space-y-2">
           <div>
             <label htmlFor={`petriCode-${formId}`} className="block text-sm font-medium text-gray-700 mb-1">
+              Petri Labeled
             </label>
             <div className="relative">
               <input

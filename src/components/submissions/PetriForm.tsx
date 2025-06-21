@@ -375,7 +375,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
                   disabled={disabled}
                   data-testid={`petri-placement-select-${formId}`}
                 >
-                  <option value="">Select placement</option>
+                  <option value="">This Petri Can Be Found At</option>
                   {petriPlacementOptions.map((placement) => (
                     <option key={placement} value={placement}>{placement}</option>
                   ))}

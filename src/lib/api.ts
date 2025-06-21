@@ -1,6 +1,10 @@
 import { supabase } from './supabaseClient';
 import { toast } from 'react-toastify';
 import { AuthError, NetworkError } from './errors';
+import { createLogger } from '../utils/logger';
+
+// Create a logger for API operations
+const logger = createLogger('API');
 
 // Constants for retry logic
 const MAX_RETRIES = 3;
@@ -9,22 +13,26 @@ const INITIAL_RETRY_DELAY = 300; // milliseconds
 /**
  * Wrapper for Supabase API calls with retry logic and auth error detection
  * @param apiCall Function that makes the actual Supabase call
+ * @param callName Optional name to identify this API call in logs
  * @param retryCount Current retry count
  * @param maxRetries Maximum number of retries
  * @returns Promise with the API result
  */
 export async function withRetry<T>(
   apiCall: () => Promise<{ data: T | null; error: any }>,
+  callName: string = 'unnamed-call',
   retryCount = 0,
   maxRetries = MAX_RETRIES
 ): Promise<{ data: T | null; error: any }> {
   try {
-    console.log(`Making API call (attempt ${retryCount + 1}/${maxRetries + 1})`);
+    logger.debug(`Making API call: [${callName}] (attempt ${retryCount + 1}/${maxRetries + 1})`);
+    const startTime = performance.now();
     const result = await apiCall();
+    const endTime = performance.now();
+    const duration = (endTime - startTime).toFixed(2);
     
-    // Check for authentication errors (don't retry these)
     if (result.error) {
-      console.error('API call returned an error:', result.error);
+      logger.error(`API call [${callName}] returned an error after ${duration}ms:`, result.error);
       
       // Check for specific auth error codes and messages
       const isAuthError = 
@@ -44,7 +52,7 @@ export async function withRetry<T>(
         result.error.message?.toLowerCase().includes('forbidden');
 
       if (isAuthError) {
-        console.error('Authentication error detected:', result.error);
+        logger.error(`Authentication error detected in [${callName}]:`, result.error);
         throw new AuthError(result.error.message || 'Authentication failed');
       }
       
@@ -56,7 +64,7 @@ export async function withRetry<T>(
         result.error.message?.toLowerCase().includes('connection');
         
       if (isNetworkError) {
-        console.error('Network error detected:', result.error);
+        logger.error(`Network error detected in [${callName}]:`, result.error);
         if (!navigator.onLine) {
           throw new NetworkError('You are currently offline');
         }
@@ -72,7 +80,7 @@ export async function withRetry<T>(
           isNetworkError;
           
         if (isRetryableError) {
-          console.warn(`API call failed (attempt ${retryCount + 1}/${maxRetries + 1}), retrying...`, result.error);
+          logger.warn(`API call [${callName}] failed (attempt ${retryCount + 1}/${maxRetries + 1}), retrying...`, result.error);
           
           // Calculate delay with exponential backoff
           const delay = INITIAL_RETRY_DELAY * Math.pow(2, retryCount);
@@ -81,9 +89,11 @@ export async function withRetry<T>(
           await new Promise(resolve => setTimeout(resolve, delay));
           
           // Retry with incremented counter
-          return withRetry(apiCall, retryCount + 1, maxRetries);
+          return withRetry(apiCall, callName, retryCount + 1, maxRetries);
         }
       }
+    } else {
+      logger.debug(`API call [${callName}] succeeded in ${duration}ms`);
     }
     
     return result;
@@ -94,11 +104,11 @@ export async function withRetry<T>(
     }
     
     // Handle unexpected errors (non-Supabase errors)
-    console.error('Unexpected error in API call:', error);
+    logger.error(`Unexpected error in API call [${callName}]:`, error);
     
     // If we haven't exceeded max retries, try again
     if (retryCount < maxRetries) {
-      console.warn(`API call failed with unexpected error (attempt ${retryCount + 1}/${maxRetries + 1}), retrying...`);
+      logger.warn(`API call [${callName}] failed with unexpected error (attempt ${retryCount + 1}/${maxRetries + 1}), retrying...`);
       
       // Calculate delay with exponential backoff
       const delay = INITIAL_RETRY_DELAY * Math.pow(2, retryCount);
@@ -107,7 +117,7 @@ export async function withRetry<T>(
       await new Promise(resolve => setTimeout(resolve, delay));
       
       // Retry with incremented counter
-      return withRetry(apiCall, retryCount + 1, maxRetries);
+      return withRetry(apiCall, callName, retryCount + 1, maxRetries);
     }
     
     // If we've exhausted retries, return a formatted error
@@ -127,14 +137,14 @@ export async function withRetry<T>(
 export const fetchSitesByProgramId = async (programId: string) => {
   if (!programId) return { data: [], error: null };
   
-  console.log(`Fetching sites for program ${programId}`);
+  logger.debug(`Fetching sites for program ${programId}`);
   return withRetry(() => 
     supabase
       .from('sites')
       .select('*')
       .eq('program_id', programId)
       .order('name', { ascending: true })
-  );
+  , `fetchSitesByProgramId(${programId})`);
 };
 
 /**
@@ -143,11 +153,11 @@ export const fetchSitesByProgramId = async (programId: string) => {
 export const fetchSubmissionsBySiteId = async (siteId: string) => {
   if (!siteId) return { data: [], error: null };
   
-  console.log(`Fetching submissions for site ${siteId}`);
+  logger.debug(`Fetching submissions for site ${siteId}`);
   return withRetry(() => 
     supabase
       .rpc('fetch_submissions_for_site', { p_site_id: siteId })
-  );
+  , `fetchSubmissionsBySiteId(${siteId})`);
 };
 
 /**
@@ -156,12 +166,12 @@ export const fetchSubmissionsBySiteId = async (siteId: string) => {
 export const fetchSiteById = async (siteId: string) => {
   if (!siteId) return { data: null, error: null };
   
-  console.log(`Fetching site ${siteId}`);
+  logger.debug(`Fetching site ${siteId}`);
   return withRetry(() => 
     supabase
       .from('sites')
       .select('*')
       .eq('site_id', siteId)
       .single()
-  );
+  , `fetchSiteById(${siteId})`);
 };

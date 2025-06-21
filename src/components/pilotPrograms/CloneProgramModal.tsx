@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { Copy, Calendar, Info, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
@@ -9,6 +9,10 @@ import { PilotProgram } from '../../lib/types';
 import { format, addDays } from 'date-fns';
 import useProgramCloning from '../../hooks/useProgramCloning';
 import { toast } from 'react-toastify';
+import { createLogger } from '../../utils/logger';
+
+// Create a logger for this component
+const logger = createLogger('CloneProgramModal');
 
 interface CloneProgramModalProps {
   isOpen: boolean;
@@ -46,14 +50,31 @@ const CloneProgramModal = ({
   const { cloneProgram, getProgramPhases, loading, error } = useProgramCloning();
   const [phases, setPhases] = useState<any[]>([]);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const modalOpenTimeRef = useRef<number | null>(null);
+  
+  // Record when the modal opens
+  useEffect(() => {
+    if (isOpen) {
+      modalOpenTimeRef.current = performance.now();
+      logger.debug(`Clone Program Modal opened for program: ${program?.name} (${program?.program_id})`);
+    }
+  }, [isOpen, program]);
   
   // Fetch program phases when modal opens
   useEffect(() => {
     if (isOpen && program) {
       const fetchPhases = async () => {
+        logger.debug(`Fetching phases for program ${program.program_id}`);
+        const startTime = performance.now();
+        
         const phases = await getProgramPhases(program.program_id);
+        const duration = performance.now() - startTime;
+        
         if (phases) {
+          logger.debug(`Retrieved ${phases.length} phases in ${duration.toFixed(2)}ms`);
           setPhases(phases);
+        } else {
+          logger.debug(`No phases found for program ${program.program_id}`);
         }
       };
       
@@ -83,9 +104,35 @@ const CloneProgramModal = ({
     },
     validationSchema: CloneProgramSchema,
     onSubmit: async (values, { setSubmitting }) => {
+      logger.info('Clone program form submitted', { 
+        sourceProgramId: program.program_id,
+        newName: values.name, 
+        startDate: values.startDate, 
+        endDate: values.endDate
+      });
+      
+      const formSubmitTime = performance.now();
+      const modalOpenDuration = modalOpenTimeRef.current 
+        ? formSubmitTime - modalOpenTimeRef.current 
+        : 0;
+      
+      logger.debug(`Time from modal open to form submit: ${modalOpenDuration.toFixed(2)}ms`);
+      
       try {
         // Prepare site overrides (if any)
         const siteOverrides = {}; // This would be populated from advanced options
+        
+        logger.debug('Calling cloneProgram with parameters', {
+          program: program.name,
+          programId: program.program_id,
+          newName: values.name,
+          description: values.description.substring(0, 20) + '...',
+          startDate: values.startDate,
+          endDate: values.endDate,
+          hasSiteOverrides: Object.keys(siteOverrides).length > 0
+        });
+        
+        const cloneStartTime = performance.now();
         
         const result = await cloneProgram({
           sourceProgram: program,
@@ -96,16 +143,33 @@ const CloneProgramModal = ({
           siteOverrides
         });
         
+        const cloneDuration = performance.now() - cloneStartTime;
+        
         if (result && result.success) {
+          const newProgramId = result.program_id;
+          
+          logger.info(`Program cloned successfully in ${cloneDuration.toFixed(2)}ms`, {
+            newProgramId,
+            siteCount: result.site_count,
+            success: true
+          });
+          
           if (onProgramCloned) {
+            logger.debug('Calling onProgramCloned callback with new program ID', { newProgramId });
             onProgramCloned(result.program_id);
           }
           onClose();
+        } else {
+          logger.error('Program cloning failed', { 
+            error: result ? result.message : 'No result returned'
+          });
         }
       } catch (error) {
-        console.error('Error cloning program:', error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error('Error cloning program:', { error: errorMessage });
         toast.error('Failed to clone program');
       } finally {
+        logger.debug('Form submission completed, resetting submission state');
         setSubmitting(false);
       }
     },
@@ -114,6 +178,7 @@ const CloneProgramModal = ({
   const toggleAdvancedOptions = () => {
     setShowAdvancedOptions(!showAdvancedOptions);
     formik.setFieldValue('showAdvancedOptions', !showAdvancedOptions);
+    logger.debug(`Advanced options ${!showAdvancedOptions ? 'shown' : 'hidden'}`);
   };
   
   // Get the next phase number
@@ -129,7 +194,10 @@ const CloneProgramModal = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => {
+        logger.debug('Clone Program Modal closed');
+        onClose();
+      }}
       title={
         <div className="flex items-center">
           <Copy className="mr-2 h-5 w-5 text-primary-600" />
@@ -282,7 +350,10 @@ const CloneProgramModal = ({
           <Button 
             type="button"
             variant="outline"
-            onClick={onClose}
+            onClick={() => {
+              logger.debug('Clone operation cancelled by user');
+              onClose();
+            }}
           >
             Cancel
           </Button>
@@ -292,6 +363,17 @@ const CloneProgramModal = ({
             isLoading={formik.isSubmitting || loading}
             disabled={!(formik.isValid && formik.dirty)}
             icon={<Copy size={16} />}
+            onClick={() => {
+              if (!formik.isSubmitting && formik.isValid && formik.dirty) {
+                logger.debug('Clone button clicked, form will be submitted');
+              } else {
+                logger.debug('Clone button clicked but form submission prevented due to validation or already submitting', {
+                  isSubmitting: formik.isSubmitting,
+                  isValid: formik.isValid,
+                  isDirty: formik.dirty
+                });
+              }
+            }}
           >
             Clone Program
           </Button>

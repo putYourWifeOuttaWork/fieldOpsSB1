@@ -1016,10 +1016,10 @@ const SubmissionEditPage = () => {
                     observationId={form.observationId}
                   />
                 ))}
-// text
+                
                 {!isSessionReadOnly && (
-                  <div className="flex justify-center mt-4">
-                    <Button
+                /*  <div className="flex justify-center mt-4">
+                      <Button
                       variant="outline"
                       onClick={addGasifierForm}
                       disabled={isSaving}
@@ -1027,7 +1027,7 @@ const SubmissionEditPage = () => {
                     >
                       Add Gasifier Sample
                     </Button>
-                  </div>
+                  </div> */
                 )}
               </div>
             </CardContent>

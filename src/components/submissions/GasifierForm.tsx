@@ -477,29 +477,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
             </label>
           </div>
           
-          <div>
-            <label htmlFor={`directionalPlacement-${formId}`} className="block text-sm font-medium text-gray-700 mb-1">
-              Facility Placement
-            </label>
-            <select
-              id={`directionalPlacement-${formId}`}
-              name="directionalPlacement"
-              className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
-              value={formik.values.directionalPlacement || ''}
-              onChange={handleFieldChange}
-              onBlur={formik.handleBlur}
-              disabled={disabled}
-              data-testid={`directional-placement-select-${formId}`}
-            >
-              <option value="">Placement Within This Facility</option>
-              {directionalPlacementOptions.map((placement) => (
-                <option key={placement} value={placement}>{placement}</option>
-              ))}
-            </select>
-            {formik.touched.directionalPlacement && formik.errors.directionalPlacement && (
-              <p className="mt-1 text-sm text-error-600">{formik.errors.directionalPlacement}</p>
-            )}
-          </div>
+          
           
           <div>
             <label htmlFor={`placementStrategy-${formId}`} className="block text-sm font-medium text-gray-700 mb-1">

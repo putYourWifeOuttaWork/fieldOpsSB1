@@ -68,7 +68,7 @@ const PilotProgramsPage = () => {
           <ArrowLeft size={20} className="text-gray-500" />
         </button>
         <div className="flex-grow">
-          <h1 className="text-2xl font-bold text-gray-900 md:text-gray-250">Pilot Programs</h1>
+          <h1 className="text-2xl font-bold md:text-gray-250 text-gray-900">Pilot Programs</h1>
           <p className="text-gray-600 mt-1">Select a program to begin work</p>
         </div>
         <Button 

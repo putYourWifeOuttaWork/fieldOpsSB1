@@ -37,7 +37,7 @@ interface GasifierFormProps {
     isDirty: boolean;
   }) => void;
   onRemove: () => void;
-  //showRemoveButton: boolean;
+  showRemoveButton: boolean;
   initialData?: {
     gasifierCode: string;
     imageUrl?: string;
@@ -331,7 +331,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
           </button>
         </div>
         
-   ////  /* {showRemoveButton && !disabled && (
+        {showRemoveButton && !disabled && (
           <Button 
             type="button" 
             variant="danger" 
@@ -343,7 +343,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
           >
             Remove
           </Button>
-        )} */
+        )}
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -5,55 +5,6 @@ import Button from '../common/Button';
 import Input from '../common/Input';
 import NewSitePetriTemplateForm from './NewSitePetriTemplateForm';
 import NewSiteGasifierTemplateForm from './NewSiteGasifierTemplateForm';
-import { PetriDefaults, GasifierDefaults, SubmissionDefaults } from '../../lib/types';
-import { v4 as uuidv4 } from 'uuid';
-import { countries, usStates, canadianProvinces, timezonesGrouped } from '../../lib/constants';
-import { createLogger } from '../../utils/logger';
-
-// Create a logger for this component
-const logger = createLogger('SiteTemplateForm');
-
-interface SiteTemplateFormProps {
-  siteId: string;
-  initialValues: {
-    submissionDefaults?: SubmissionDefaults;
-    petriDefaults?: PetriDefaults[];
-    gasifierDefaults?: GasifierDefaults[];
-    // Static site properties
-    squareFootage?: number;
-    cubicFootage?: number;
-    numVents?: number;
-    ventPlacements?: string[];
-    primaryFunction?: string;
-    constructionMaterial?: string;
-    insulationType?: string;
-    hvacSystemPresent?: boolean;
-    hvacSystemType?: string;
-    irrigationSystemType?: string;
-    lightingSystem?: string;
-    // Dimensions
-    length?: number;
-    width?: number;
-    height?: number;
-    // Density
-    minEfficaciousGasifierDensity?: number;
-    // Airflow dynamics
-    hasDeadZones?: boolean;
-    numRegularlyOpenedPorts?: number;
-    // Environment
-    interiorWorkingSurfaceTypes?: string[];
-    microbialRiskZone?: string;
-    quantityDeadzones?: number;
-    ventilationStrategy?: string;
-    // Location
-    country?: string;
-    state?: string;
-    timezone?: string;
-  };
-  initialSiteName: string;
-  onSubmit: (
-    siteName: string, 
-    submissionDefaults: SubmissionDefaults, 
     petriDefaults: PetriDefaults[], 
     gasifierDefaults: GasifierDefaults[],
     siteProperties?: any
@@ -373,6 +324,55 @@ const SiteTemplateForm: React.FC<SiteTemplateFormProps> = ({
       }
     },
   });
+  
+  // Helper functions for template management (moved after formik initialization)
+  const handleAddPetriTemplate = () => {
+    const templates = [...formik.values.petriTemplates];
+    templates.push({
+      petri_code: `P${templates.length + 1}`,
+      fungicide_used: 'No',
+      surrounding_water_schedule: 'Daily',
+      notes: ''
+    });
+    formik.setFieldValue('petriTemplates', templates);
+  };
+  
+  const handleRemovePetriTemplate = (index: number) => {
+    const templates = [...formik.values.petriTemplates];
+    templates.splice(index, 1);
+    formik.setFieldValue('petriTemplates', templates);
+  };
+  
+  const handleUpdatePetriTemplate = (index: number, template: any) => {
+    const templates = [...formik.values.petriTemplates];
+    templates[index] = template;
+    formik.setFieldValue('petriTemplates', templates);
+  };
+  
+  const handleAddGasifierTemplate = () => {
+    const templates = [...formik.values.gasifierTemplates];
+    templates.push({
+      gasifier_code: `G${templates.length + 1}`,
+      chemical_type: 'Geraniol',
+      placement_height: 'Medium',
+      directional_placement: 'Center-Center',
+      placement_strategy: 'Centralized Coverage',
+      notes: ''
+    });
+    formik.setFieldValue('gasifierTemplates', templates);
+  };
+  
+  const handleRemoveGasifierTemplate = (index: number) => {
+    const templates = [...formik.values.gasifierTemplates];
+    templates.splice(index, 1);
+    formik.setFieldValue('gasifierTemplates', templates);
+  };
+  
+  const handleUpdateGasifierTemplate = (index: number, template: any) => {
+    const templates = [...formik.values.gasifierTemplates];
+    templates[index] = template;
+    formik.setFieldValue('gasifierTemplates', templates);
+  };
   
   // Effect to auto-scroll to first validation error
   const handleSubmitWithValidation = async (e: React.FormEvent) => {

@@ -292,7 +292,7 @@ const ImageUploadField = ({
               <>
                 <Upload className="w-6 h-6 text-gray-400" />
                 <p className="text-xs text-gray-500 mt-1">
-                  Click to Take A Photo (No Need For Uploads)
+                  <center>Click to Take A Photo (No Need For Uploads)</center>
                 </p>
               </>
             )}

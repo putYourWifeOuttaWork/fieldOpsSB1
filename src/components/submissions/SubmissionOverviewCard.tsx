@@ -190,7 +190,7 @@ const SubmissionOverviewCard: React.FC<SubmissionOverviewCardProps> = ({
   
   // Get display status - special case for Shared status
   const getDisplayStatus = () => {
-    if (!session) return "Legacy Submission";
+    if (!session) return "Not Shared With You";
     return session.session_status;
   };
 

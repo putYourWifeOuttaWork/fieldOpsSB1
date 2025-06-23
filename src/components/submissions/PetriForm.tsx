@@ -53,9 +53,6 @@ interface PetriFormProps {
   };
   disabled?: boolean;
   observationId?: string;
-  // Add submission environmental data as fallback values
-  submissionOutdoorTemperature?: number;
-  submissionOutdoorHumidity?: number;
 }
 
 export interface PetriFormRef {
@@ -111,9 +108,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
   showRemoveButton,
   initialData,
   disabled = false,
-  observationId,
-  submissionOutdoorTemperature,
-  submissionOutdoorHumidity
+  observationId
 }, ref) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [tempImageKey, setTempImageKey] = useState<string | undefined>(initialData?.tempImageKey);
@@ -128,9 +123,8 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
       surroundingWaterSchedule: initialData?.surroundingWaterSchedule || '',
       notes: initialData?.notes || '',
       placement: initialData?.placement || null,
-      // Prioritize existing data, then submission data, then null
-      outdoor_temperature: initialData?.outdoor_temperature || submissionOutdoorTemperature || null,
-      outdoor_humidity: initialData?.outdoor_humidity || submissionOutdoorHumidity || null
+      outdoor_temperature: initialData?.outdoor_temperature || null,
+      outdoor_humidity: initialData?.outdoor_humidity || null
     },
     validationSchema: PetriFormSchema,
     validateOnMount: !!initialData,
@@ -206,8 +200,6 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
       fileSize: data.file?.size,
       tempImageKey: data.tempImageKey,
       imageUrl: !!data.imageUrl ? '[present]' : '[not present]',
-      outdoor_temp: data.outdoor_temperature,
-      outdoor_humidity: data.outdoor_humidity,
       formId
     });
     
@@ -215,19 +207,12 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
     setTempImageKey(data.tempImageKey);
     setImageUrl(data.imageUrl);
     
-    // Set environmental data with fallback to submission values
-    if (data.outdoor_temperature !== undefined) {
+    if (data.outdoor_temperature) {
       formik.setFieldValue('outdoor_temperature', data.outdoor_temperature);
-    } else if (submissionOutdoorTemperature !== undefined && 
-               formik.values.outdoor_temperature === null) {
-      formik.setFieldValue('outdoor_temperature', submissionOutdoorTemperature);
     }
     
-    if (data.outdoor_humidity !== undefined) {
+    if (data.outdoor_humidity) {
       formik.setFieldValue('outdoor_humidity', data.outdoor_humidity);
-    } else if (submissionOutdoorHumidity !== undefined && 
-              formik.values.outdoor_humidity === null) {
-      formik.setFieldValue('outdoor_humidity', submissionOutdoorHumidity);
     }
     
     if (data.isDirty) {
@@ -253,9 +238,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
         hasData,
         hasImage,
         observationId: observationId || initialData?.observationId,
-        isDirty,
-        outdoor_temperature: formik.values.outdoor_temperature,
-        outdoor_humidity: formik.values.outdoor_humidity
+        isDirty
       });
       
       onUpdate({
@@ -269,7 +252,6 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
         notes: formik.values.notes,
         placement: formik.values.placement,
         placement_dynamics: initialData?.placement_dynamics,
-        // Ensure we pass environmental data, using form values that might include fallback values
         outdoor_temperature: formik.values.outdoor_temperature || undefined,
         outdoor_humidity: formik.values.outdoor_humidity || undefined,
         isValid,

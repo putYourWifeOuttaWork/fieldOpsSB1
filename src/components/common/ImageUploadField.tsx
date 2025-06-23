@@ -183,7 +183,7 @@ const ImageUploadField = ({
               file,
               tempImageKey,
               isDirty: false,
-              ...environmentalData
+              ...environmentalData // '...' i guess is a thing...
             });
 
             return () => {

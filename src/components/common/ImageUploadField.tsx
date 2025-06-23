@@ -154,7 +154,8 @@ const ImageUploadField = ({
   // Load temp image if available
   useEffect(() => {
     const loadTempImage = async () => {
-      if (tempImageKey && !imageFile && !imagePreview) {
+      // Always prioritize loading from tempImageKey if it's available
+      if (tempImageKey) {
         try {
           logger.debug(`Loading temp image with key: ${tempImageKey}`);
           const blob = await offlineStorage.getTempImage(tempImageKey);
@@ -164,8 +165,8 @@ const ImageUploadField = ({
             setImageFile(file);
             
             const environmentalData = {
-            outdoor_temperature: currentConditions?.temp,
-            outdoor_humidity: currentConditions?.RelativeHumidity || currentConditions?.humidity
+              outdoor_temperature: currentConditions?.temp,
+              outdoor_humidity: currentConditions?.RelativeHumidity || currentConditions?.humidity
             };
 
             const url = URL.createObjectURL(blob);
@@ -178,7 +179,7 @@ const ImageUploadField = ({
               fileSize: file.size
             });
 
-            //Ensure onChange is called so parent components know we have a valid image
+            // Ensure onChange is called so parent components know we have a valid image
             onChange({
               file,
               tempImageKey,
@@ -191,15 +192,26 @@ const ImageUploadField = ({
             };
           } else {
             logger.debug(`No temp image found for key: ${tempImageKey}`);
+            // If we can't find the temp image, fall back to initialImageUrl
+            if (initialImageUrl && !imagePreview) {
+              setImagePreview(initialImageUrl);
+            }
           }
         } catch (error) {
           logger.error(`Error loading temp image for key ${tempImageKey}:`, error);
+          // If there's an error, fall back to initialImageUrl
+          if (initialImageUrl && !imagePreview) {
+            setImagePreview(initialImageUrl);
+          }
         }
+      } else if (initialImageUrl && !imagePreview) {
+        // Only set imagePreview from initialImageUrl if we don't already have a preview
+        setImagePreview(initialImageUrl);
       }
     };
     
     loadTempImage();
-  }, [tempImageKey, imageFile, imagePreview, imageId, onChange, currentConditions]);
+  }, [tempImageKey, initialImageUrl, imageId, onChange, currentConditions, imagePreview]);
 
   const triggerFileInput = () => {
     if (disabled) return;
@@ -298,7 +310,7 @@ const ImageUploadField = ({
               <>
                 <Upload className="w-6 h-6 text-gray-400" />
                 <p className="text-xs text-gray-500 mt-1">
-                  <center>Click to Take A Photo (No Need For Uploads)</center>
+                  Click to Take A Photo (No Need For Uploads)
                 </p>
               </>
             )}
@@ -330,7 +342,7 @@ const ImageUploadField = ({
       {(imageTouched && !imageFile && !imagePreview && !tempImageKey) || uploadError ? (
         <p className="mt-1 text-sm text-error-600">{uploadError || 'Take A Photo, Do Not Upload'}</p>
       ) : (
-       <center><p className="text-xs text-gray-500 mt-1">Click - Take A Photo - Done</p></center>
+        <p className="text-xs text-gray-500 mt-1">Click - Take A Photo - Done</p>
       )}
     </div>
   );

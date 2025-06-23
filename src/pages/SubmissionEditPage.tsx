@@ -1044,7 +1044,7 @@ const SubmissionEditPage = () => {
                       siteId={siteId!}
                       submissionSessionId={session?.session_id || submissionId!}
                       ref={form.ref}
-                      onUpdate={(data) => handlePetriUpdate(form.id, data)}
+                      onUpdate={(data) => handlePetriFormUpdate(form.id, data)}
                       onRemove={() => removePetriForm(form.id)}
                       showRemoveButton={petriForms.length > 1}
                       initialData={initialData}

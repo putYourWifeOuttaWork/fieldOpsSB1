@@ -16,7 +16,7 @@ interface GasifierFormProps {
   index: number;
   siteId: string;
   submissionSessionId: string;
-  onUpdate: (formId: string, data: {
+  onUpdate: (data: {
     gasifierCode: string;
     imageFile: File | null;
     imageUrl?: string;
@@ -55,8 +55,6 @@ interface GasifierFormProps {
   };
   disabled?: boolean;
   observationId?: string;
-  submissionOutdoorTemperature?: number;
-  submissionOutdoorHumidity?: number;
 }
 
 export interface GasifierFormRef {
@@ -133,9 +131,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
   showRemoveButton,
   initialData,
   disabled = false,
-  observationId,
-  submissionOutdoorTemperature,
-  submissionOutdoorHumidity
+  observationId
 }, ref) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [tempImageKey, setTempImageKey] = useState<string | undefined>(initialData?.tempImageKey);
@@ -153,8 +149,8 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
       directionalPlacement: initialData?.directionalPlacement || null,
       placementStrategy: initialData?.placementStrategy || null,
       notes: initialData?.notes || '',
-      outdoor_temperature: initialData?.outdoor_temperature || submissionOutdoorTemperature || null,
-      outdoor_humidity: initialData?.outdoor_humidity || submissionOutdoorHumidity || null
+      outdoor_temperature: initialData?.outdoor_temperature || null,
+      outdoor_humidity: initialData?.outdoor_humidity || null
     },
     validationSchema: GasifierFormSchema,
     validateOnMount: !!initialData,
@@ -229,26 +225,19 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
       fileSize: data.file?.size,
       tempImageKey: data.tempImageKey,
       imageUrl: !!data.imageUrl ? '[present]' : '[not present]',
-      formId,
-      outdoor_temperature: data.outdoor_temperature,
-      outdoor_humidity: data.outdoor_humidity
+      formId
     });
 
     setImageFile(data.file);
     setTempImageKey(data.tempImageKey);
     setImageUrl(data.imageUrl);
     
-    // Use the data from the ImageUploadField if available, otherwise use the submission fallbacks
-    if (data.outdoor_temperature !== undefined) {
+    if (data.outdoor_temperature) {
       formik.setFieldValue('outdoor_temperature', data.outdoor_temperature);
-    } else if (submissionOutdoorTemperature !== undefined && formik.values.outdoor_temperature === null) {
-      formik.setFieldValue('outdoor_temperature', submissionOutdoorTemperature);
     }
     
-    if (data.outdoor_humidity !== undefined) {
+    if (data.outdoor_humidity) {
       formik.setFieldValue('outdoor_humidity', data.outdoor_humidity);
-    } else if (submissionOutdoorHumidity !== undefined && formik.values.outdoor_humidity === null) {
-      formik.setFieldValue('outdoor_humidity', submissionOutdoorHumidity);
     }
     
     if (data.isDirty) {
@@ -274,12 +263,10 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
         hasData,
         hasImage,
         observationId: observationId || initialData?.observationId,
-        isDirty,
-        outdoor_temperature: formik.values.outdoor_temperature,
-        outdoor_humidity: formik.values.outdoor_humidity
+        isDirty
       });
 
-      onUpdate(formId, {
+      onUpdate({
         gasifierCode: formik.values.gasifierCode,
         imageFile,
         imageUrl: initialData?.observationId ? initialData?.imageUrl : undefined,
@@ -321,8 +308,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
     initialData?.imageUrl,
     observationId,
     isDirty,
-    onUpdate,
-    formId
+    onUpdate
   ]);
 
   return (

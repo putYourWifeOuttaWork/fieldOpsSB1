@@ -28,7 +28,6 @@ import useWeather from '../hooks/useWeather';
 import AnalyticsChart from '../components/dashboard/AnalyticsChart';
 import UnclaimedSessionsCard from '../components/submissions/UnclaimedSessionsCard';
 import { useSessionStore } from '../stores/sessionStore';
-import { useSessionStore } from '../stores/sessionStore';
 
 // Type for recent submission from the get_recent_submissions RPC
 interface RecentSubmission {
@@ -80,10 +79,11 @@ const HomePage = () => {
   const [hasUserManuallySetWeather, setHasUserManuallySetWeather] = useState(false);
   
   // Get session store for sessions drawer
-  const { setIsSessionsDrawerOpen } = useSessionStore();
-  
-  // Get session store for unclaimed sessions
-  const { unclaimedSessions, isLoading: sessionsLoading } = useSessionStore();
+  const { 
+    setIsSessionsDrawerOpen,
+    unclaimedSessions, 
+    isLoading: sessionsLoading 
+  } = useSessionStore();
   
   // Pre-select the first program when the page loads, but only once
   useEffect(() => {

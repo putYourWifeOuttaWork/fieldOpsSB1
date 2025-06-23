@@ -181,9 +181,9 @@ const ImageUploadField = ({
             // Ensure onChange is called so parent components know we have a valid image
             onChange({
               file,
-              environmentalData,
               tempImageKey,
-              isDirty: false
+              isDirty: false,
+              ...environmentalData // '...' i guess is a thing...
             });
 
             return () => {

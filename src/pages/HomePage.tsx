@@ -264,7 +264,7 @@ const HomePage = () => {
   }
   
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in md:items-center">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div className="flex-grow">
           <h1 className="text-2xl font-bold text-gray-900">Welcome to GRMTek Sporeless</h1>

@@ -16,7 +16,7 @@ interface GasifierFormProps {
   index: number;
   siteId: string;
   submissionSessionId: string;
-  onUpdate: (formId: string, data: { // Changed: Added formId as first argument
+  onUpdate: (formId: string, data: {
     gasifierCode: string;
     imageFile: File | null;
     imageUrl?: string;
@@ -266,7 +266,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
         isDirty
       });
 
-      onUpdate(formId, { // Changed: Pass formId as first argument
+      onUpdate(formId, {
         gasifierCode: formik.values.gasifierCode,
         imageFile,
         imageUrl: initialData?.observationId ? initialData?.imageUrl : undefined,

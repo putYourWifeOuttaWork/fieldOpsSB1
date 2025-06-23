@@ -69,8 +69,8 @@ const SubmissionEditPage = () => {
   const [gasifierObservations, setGasifierObservations] = useState<any[]>([]);
   
   // Form reference arrays for validating and accessing forms
-  const [petriForms, setPetriForms] = useState<{ id: string; ref: React.RefObject<PetriFormRef>; isValid: boolean; isDirty: boolean; observationId?: string; }[]>([]);
-  const [gasifierForms, setGasifierForms] = useState<{ id: string; ref: React.RefObject<GasifierFormRef>; isValid: boolean; isDirty: boolean; observationId?: string; }[]>([]);
+  const [petriForms, setPetriForms] = useState<{ id: string; ref: React.RefObject<PetriFormRef>; isValid: boolean; isDirty: boolean; observationId?: string; tempImageKey?: string }[]>([]);
+  const [gasifierForms, setGasifierForms] = useState<{ id: string; ref: React.RefObject<GasifierFormRef>; isValid: boolean; isDirty: boolean; observationId?: string; tempImageKey?: string }[]>([]);
   
   // Add state variables to store complete form data objects
   const [petriObservationData, setPetriObservationData] = useState<{[key: string]: any}>({});
@@ -416,7 +416,12 @@ const SubmissionEditPage = () => {
     setPetriForms(prevForms => 
       prevForms.map(f => 
         f.id === formId 
-          ? { ...f, isValid: data.isValid, isDirty: data.isDirty || f.isDirty } 
+          ? { 
+              ...f, 
+              isValid: data.isValid, 
+              isDirty: data.isDirty || f.isDirty, 
+              tempImageKey: data.tempImageKey 
+            } 
           : f
       )
     );
@@ -429,7 +434,7 @@ const SubmissionEditPage = () => {
       isDirty: data.isDirty,
       hasImage: data.hasImage
     });
-  }, []); // Removed petriForms from dependencies
+  }, []);
 
   // Callback for GasifierForm updates
   const handleGasifierFormUpdate = useCallback((formId: string, data: any) => {
@@ -444,7 +449,12 @@ const SubmissionEditPage = () => {
     setGasifierForms(prevForms => 
       prevForms.map(f => 
         f.id === formId 
-          ? { ...f, isValid: data.isValid, isDirty: data.isDirty || f.isDirty } 
+          ? { 
+              ...f, 
+              isValid: data.isValid, 
+              isDirty: data.isDirty || f.isDirty,
+              tempImageKey: data.tempImageKey 
+            } 
           : f
       )
     );
@@ -457,7 +467,7 @@ const SubmissionEditPage = () => {
       isDirty: data.isDirty,
       hasImage: data.hasImage
     });
-  }, []); // Removed gasifierForms from dependencies
+  }, []);
 
   // Handle form submission
   const handleSave = async () => {
@@ -484,7 +494,8 @@ const SubmissionEditPage = () => {
           isValid: data.isValid,
           outdoor_temperature: data.outdoor_temperature,
           outdoor_humidity: data.outdoor_humidity,
-          formId: data.formId
+          formId: data.formId,
+          tempImageKey: data.tempImageKey
         }));
       
       // Get data from gasifier forms
@@ -505,7 +516,8 @@ const SubmissionEditPage = () => {
           isValid: data.isValid,
           outdoor_temperature: data.outdoor_temperature,
           outdoor_humidity: data.outdoor_humidity,
-          formId: data.formId
+          formId: data.formId,
+          tempImageKey: data.tempImageKey
         }));
       
       // If online, update the submission using the hook function
@@ -908,7 +920,7 @@ const SubmissionEditPage = () => {
         canShare={canEditSubmission && !isSessionReadOnly}
         petrisComplete={completedPetriCount}
         petrisTotal={petriObservations.length}
-        gasifiersComplete={gasifierObservations.length}
+        gasifiersComplete={completedGasifierCount}
         gasifiersTotal={gasifierObservations.length}
       />
 
@@ -937,12 +949,13 @@ const SubmissionEditPage = () => {
                       siteId={siteId!}
                       submissionSessionId={session?.session_id || submissionId!}
                       ref={form.ref}
-                      onUpdate={handlePetriFormUpdate} // Changed: Directly pass the memoized callback
+                      onUpdate={handlePetriFormUpdate}
                       onRemove={() => removePetriForm(form.id)}
                       showRemoveButton={petriForms.length > 1}
                       initialData={petriObservations.find(obs => obs.observation_id === form.id) ? {
                         petriCode: petriObservations.find(obs => obs.observation_id === form.id).petri_code,
                         imageUrl: petriObservations.find(obs => obs.observation_id === form.id).image_url,
+                        tempImageKey: form.tempImageKey,
                         plantType: petriObservations.find(obs => obs.observation_id === form.id).plant_type,
                         fungicideUsed: petriObservations.find(obs => obs.observation_id === form.id).fungicide_used,
                         surroundingWaterSchedule: petriObservations.find(obs => obs.observation_id === form.id).surrounding_water_schedule,
@@ -997,12 +1010,13 @@ const SubmissionEditPage = () => {
                     siteId={siteId!}
                     submissionSessionId={session?.session_id || submissionId!}
                     ref={form.ref}
-                    onUpdate={handleGasifierFormUpdate} // Changed: Directly pass the memoized callback
+                    onUpdate={handleGasifierFormUpdate}
                     onRemove={() => removeGasifierForm(form.id)}
                     showRemoveButton={gasifierForms.length > 1}
                     initialData={gasifierObservations.find(obs => obs.observation_id === form.id) ? {
                       gasifierCode: gasifierObservations.find(obs => obs.observation_id === form.id).gasifier_code,
                       imageUrl: gasifierObservations.find(obs => obs.observation_id === form.id).image_url,
+                      tempImageKey: form.tempImageKey,
                       chemicalType: gasifierObservations.find(obs => obs.observation_id === form.id).chemical_type,
                       measure: gasifierObservations.find(obs => obs.observation_id === form.id).measure,
                       anomaly: gasifierObservations.find(obs => obs.observation_id === form.id).anomaly,

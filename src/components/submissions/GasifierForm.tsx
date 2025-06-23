@@ -225,28 +225,44 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
     outdoor_humidity?: number;
     isDirty: boolean;
   }) => {
-    logger.debug('handleImageChange called with:', {
+    logger.debug('handleImageChange called for gasifier observation:', {
       hasFile: !!data.file,
       fileSize: data.file?.size,
       tempImageKey: data.tempImageKey,
       imageUrl: !!data.imageUrl ? '[present]' : '[not present]',
       formId,
       outdoor_temperature: data.outdoor_temperature,
-      outdoor_humidity: data.outdoor_humidity
+      outdoor_humidity: data.outdoor_humidity,
+      submissionOutdoorTemperature,
+      submissionOutdoorHumidity
     });
 
     setImageFile(data.file);
     setTempImageKey(data.tempImageKey);
     setImageUrl(data.imageUrl);
     
-    // Only use environmental data explicitly provided by the image upload field
-    if (data.outdoor_temperature !== undefined) {
-      formik.setFieldValue('outdoor_temperature', data.outdoor_temperature);
-    }
+    // Use environmental data from image upload field if available, otherwise fall back to submission values
+    const temperatureValue = 
+      data.outdoor_temperature !== undefined ? data.outdoor_temperature : 
+      submissionOutdoorTemperature !== undefined ? submissionOutdoorTemperature : 
+      null;
     
-    if (data.outdoor_humidity !== undefined) {
-      formik.setFieldValue('outdoor_humidity', data.outdoor_humidity);
-    }
+    const humidityValue = 
+      data.outdoor_humidity !== undefined ? data.outdoor_humidity : 
+      submissionOutdoorHumidity !== undefined ? submissionOutdoorHumidity : 
+      null;
+    
+    // Set the temperature with fallback logic
+    formik.setFieldValue('outdoor_temperature', temperatureValue);
+    
+    // Set the humidity with fallback logic
+    formik.setFieldValue('outdoor_humidity', humidityValue);
+    
+    logger.debug(`Setting environmental data for gasifier observation:`, {
+      temperatureValue,
+      humidityValue,
+      usingFallback: data.outdoor_temperature === undefined || data.outdoor_humidity === undefined
+    });
     
     if (data.isDirty) {
       setIsDirty(true);

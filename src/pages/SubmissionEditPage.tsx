@@ -43,6 +43,10 @@ import PermissionModal from '../components/common/PermissionModal';
 import SessionShareModal from '../components/submissions/SessionShareModal';
 import SubmissionOverviewCard from '../components/submissions/SubmissionOverviewCard';
 import { useSubmissions } from '../hooks/useSubmissions';
+import { createLogger } from '../../utils/logger';
+
+// Create a component-specific logger
+const logger = createLogger('SubmissionEditPage');
 
 const SubmissionEditPage = () => {
   const { programId, siteId, submissionId } = useParams<{ programId: string; siteId: string; submissionId: string }>();
@@ -385,8 +389,69 @@ const SubmissionEditPage = () => {
     delete updatedData[id];
     setGasifierObservationData(updatedData);
   };
+
+// Stabilized callback for PetriForm updates
+  const handlePetriFormUpdate = useCallback((formId: string, data: any) => {
+    // Store complete data in petriObservationData
+    setPetriObservationData(prevData => ({
+      ...prevData,
+      [formId]: {
+        ...data,
+        formId: formId
+      }
+    }));
+    
+    // Update form validation state
+    setPetriForms(prevForms => 
+      prevForms.map(f => 
+        f.id === formId 
+          ? { ...f, isValid: data.isValid, isDirty: data.isDirty || f.isDirty } 
+          : f
+      )
+    );
+    
+    logger.debug(`Petri form ${formId} updated with data:`, { 
+      petriCode: data.petriCode,
+      hasImageFile: !!data.imageFile,
+      tempImageKey: data.tempImageKey,
+      isValid: data.isValid,
+      isDirty: data.isDirty,
+      hasImage: data.hasImage
+    });
+  }, [setPetriObservationData, setPetriForms, petriForms]); // Added petriForms to dependencies
+
+  // Stabilized callback for GasifierForm updates
+  const handleGasifierFormUpdate = useCallback((formId: string, data: any) => {
+    // Store complete data in gasifierObservationData
+    setGasifierObservationData(prevData => ({
+      ...prevData,
+      [formId]: {
+        ...data,
+        formId: formId
+      }
+    }));
+    
+    // Update form validation state
+    setGasifierForms(prevForms => 
+      prevForms.map(f => 
+        f.id === formId 
+          ? { ...f, isValid: data.isValid, isDirty: data.isDirty || f.isDirty } 
+          : f
+      )
+    );
+    
+    logger.debug(`Gasifier form ${formId} updated with data:`, { 
+      gasifierCode: data.gasifierCode,
+      hasImageFile: !!data.imageFile,
+      tempImageKey: data.tempImageKey,
+      isValid: data.isValid,
+      isDirty: data.isDirty,
+      hasImage: data.hasImage
+    });
+  }, [setGasifierObservationData, setGasifierForms, gasifierForms]); // Added gasifierForms to dependencies
   
-  // Updated to preserve tempImageKey
+  
+  /* Updated to preserve tempImageKey
   const handlePetriUpdate = (formId: string, data: any) => {
     console.log(`Petri form ${formId} updated with data:`, { 
       petriCode: data.petriCode, 
@@ -456,7 +521,8 @@ const SubmissionEditPage = () => {
     );
   };
   
-  // Handle form submission
+  */
+  //Handle form submission
   const handleSave = async () => {
     if (!programId || !siteId || !submissionId) return;
     
@@ -1015,7 +1081,57 @@ const SubmissionEditPage = () => {
             </div>
           </CardHeader>
           {isGasifierAccordionOpen && (
-            <CardContent>
+           <CardContent>
+              <div className="space-y-4">
+                {gasifierForms.map((form, index) => (
+                  <GasifierForm
+                    key={form.id}
+                    id={`gasifier-form-${form.id}`}
+                    formId={form.id}
+                    index={index + 1}
+                    siteId={siteId!}
+                    submissionSessionId={session?.session_id || submissionId!}
+                    ref={form.ref}
+                    onUpdate={(data) => handleGasifierFormUpdate(form.id, data)}
+                    onRemove={() => removeGasifierForm(form.id)}
+                    showRemoveButton={gasifierForms.length > 1}
+                    initialData={gasifierObservations.find(obs => obs.observation_id === form.id) ? {
+                      gasifierCode: gasifierObservations.find(obs => obs.observation_id === form.id).gasifier_code,
+                      imageUrl: gasifierObservations.find(obs => obs.observation_id === form.id).image_url,
+                      chemicalType: gasifierObservations.find(obs => obs.observation_id === form.id).chemical_type,
+                      measure: gasifierObservations.find(obs => obs.observation_id === form.id).measure,
+                      anomaly: gasifierObservations.find(obs => obs.observation_id === form.id).anomaly,
+                      placementHeight: gasifierObservations.find(obs => obs.observation_id === form.id).placement_height,
+                      directionalPlacement: gasifierObservations.find(obs => obs.observation_id === form.id).directional_placement,
+                      placementStrategy: gasifierObservations.find(obs => obs.observation_id === form.id).placement_strategy,
+                      notes: gasifierObservations.find(obs => obs.observation_id === form.id).notes || '',
+                      observationId: gasifierObservations.find(obs => obs.observation_id === form.id).observation_id,
+                      outdoor_temperature: gasifierObservations.find(obs => obs.observation_id === form.id).outdoor_temperature,
+                      outdoor_humidity: gasifierObservations.find(obs => obs.observation_id === form.id).outdoor_humidity
+                    } : undefined}
+                    disabled={isSessionReadOnly}
+                    observationId={form.observationId}
+                  />
+                ))}
+                
+                {!isSessionReadOnly && (
+                  <div className="flex justify-center mt-4">
+                    <Button
+                      variant="outline"
+                      onClick={addGasifierForm}
+                      disabled={isSaving}
+                      testId="add-gasifier-form-button"
+                    >
+                      Add Gasifier Sample
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+      
+      
+          /* //This is Old  
+          <CardContent>
               <div className="space-y-4">
                 {gasifierForms.map((form, index) => {
                   // Find the gasifier observation data
@@ -1071,7 +1187,7 @@ const SubmissionEditPage = () => {
                   </div>
                 )}
               </div>
-            </CardContent>
+            </CardContent> */
           )}
         </Card>
       </div>

@@ -195,7 +195,7 @@ const ImageUploadField = ({
     };
     
     loadTempImage();
-  }, [tempImageKey, imageFile, imagePreview, imageId, onChange]);
+  }, [tempImageKey, imageFile, outdoor_temperature, outdoor_humidity, imagePreview, imageId, onChange]);
 
   const triggerFileInput = () => {
     if (disabled) return;

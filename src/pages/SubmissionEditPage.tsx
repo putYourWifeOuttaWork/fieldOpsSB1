@@ -744,6 +744,18 @@ const SubmissionEditPage = () => {
               >
                 Share
               </Button>
+
+              <Button
+                variant="danger"
+                onClick={handleCancel}
+                isLoading={isSaving}
+                disabled={!canEditSubmission}
+                icon={<XCircle size={16} />}
+                testId="save-submission-button"
+              >
+                Cancel
+              </Button>
+              
               
               <Button
                 variant="outline"
@@ -1152,7 +1164,7 @@ const SubmissionEditPage = () => {
       
       {/* Action buttons for mobile (fixed at bottom) */}
       {!isSessionReadOnly && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 flex space-x-2 z-10">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 flex space-x-2 z-10">
           <Button
             variant="outline"
             onClick={() => navigate(`/programs/${programId}/sites/${siteId}`)}

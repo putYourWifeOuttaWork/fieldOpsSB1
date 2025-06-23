@@ -40,6 +40,10 @@ interface SessionState {
   hasUnclaimedSessions: boolean;
   setHasUnclaimedSessions: (value: boolean) => void;
   
+  // Controls visibility of the sessions drawer
+  isSessionsDrawerOpen: boolean;
+  setIsSessionsDrawerOpen: (isOpen: boolean) => void;
+  
   // Claim a session
   claimSession: (sessionId: string) => Promise<boolean>;
 }
@@ -50,6 +54,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   error: null,
   currentSessionId: null,
   hasUnclaimedSessions: false,
+  isSessionsDrawerOpen: false,
   
   setActiveSessions: (sessions) => set({ 
     // Filter out cancelled and expired sessions
@@ -65,6 +70,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   setError: (error) => set({ error }),
   setCurrentSessionId: (sessionId) => set({ currentSessionId: sessionId }),
   setHasUnclaimedSessions: (value) => set({ hasUnclaimedSessions: value }),
+  setIsSessionsDrawerOpen: (isOpen) => set({ isSessionsDrawerOpen: isOpen }),
   
   addSession: (session) => set((state) => ({
     // Only add if not cancelled or expired

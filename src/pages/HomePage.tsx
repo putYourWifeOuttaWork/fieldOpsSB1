@@ -12,6 +12,7 @@ import {
   MapPin,
   Home,
   Hash,
+  ClipboardList,
 } from 'lucide-react';
 import Button from '../components/common/Button';
 import Card, { CardHeader, CardContent, CardFooter } from '../components/common/Card';
@@ -26,6 +27,7 @@ import { toast } from 'react-toastify';
 import useWeather from '../hooks/useWeather';
 import AnalyticsChart from '../components/dashboard/AnalyticsChart';
 import UnclaimedSessionsCard from '../components/submissions/UnclaimedSessionsCard';
+import { useSessionStore } from '../stores/sessionStore';
 import { useSessionStore } from '../stores/sessionStore';
 
 // Type for recent submission from the get_recent_submissions RPC
@@ -76,6 +78,9 @@ const HomePage = () => {
     userCompany?.default_weather || 'Clear'
   );
   const [hasUserManuallySetWeather, setHasUserManuallySetWeather] = useState(false);
+  
+  // Get session store for sessions drawer
+  const { setIsSessionsDrawerOpen } = useSessionStore();
   
   // Get session store for unclaimed sessions
   const { unclaimedSessions, isLoading: sessionsLoading } = useSessionStore();
@@ -261,9 +266,41 @@ const HomePage = () => {
   return (
     <div className="animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-        <div>
+        <div className="flex-grow">
           <h1 className="text-2xl font-bold text-gray-900">Welcome to GRMTek Sporeless</h1>
           <p className="text-gray-600 mt-1">Your field operations dashboard</p>
+        </div>
+        
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="accent"
+            className="animate-pulse"
+            onClick={() => setIsSessionsDrawerOpen(true)}
+            icon={<ClipboardList size={16} />}
+            testId="manage-sessions-button"
+          >
+            Manage Sessions
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate('/programs')}
+            testId="view-programs-button"
+          >
+            View Programs
+          </Button>
+          
+          {selectedProgramId && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/programs/${selectedProgramId}/sites`)}
+              testId="view-all-sites-button"
+            >
+              View All Sites
+            </Button>
+          )}
         </div>
       </div>
       
@@ -383,26 +420,6 @@ const HomePage = () => {
               )}
             </div>
           </CardContent>
-          <CardFooter className="flex justify-end space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/programs')}
-              testId="view-programs-button"
-            >
-              View Programs
-            </Button>
-            {selectedProgramId && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate(`/programs/${selectedProgramId}/sites`)}
-                testId="view-all-sites-button"
-              >
-                View All Sites
-              </Button>
-            )}
-          </CardFooter>
         </Card>
         
         {/* Today's Weather Card */}

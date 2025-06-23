@@ -32,8 +32,13 @@ const AppLayout = () => {
   const { programId } = useParams<{ programId: string }>();
   const { canViewAuditLog } = useUserRole({ programId });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSessionsDrawerOpen, setIsSessionsDrawerOpen] = useState(false);
-  const { activeSessions, setActiveSessions, setIsLoading } = useSessionStore();
+  const { 
+    activeSessions, 
+    setActiveSessions, 
+    setIsLoading,
+    isSessionsDrawerOpen,
+    setIsSessionsDrawerOpen
+  } = useSessionStore();
   const [hasActiveSessions, setHasActiveSessions] = useState(false);
   const [showSessionIndicator, setShowSessionIndicator] = useState(false);
   
@@ -302,7 +307,9 @@ const AppLayout = () => {
       {/* Active Sessions Drawer */}
       <ActiveSessionsDrawer
         isOpen={isSessionsDrawerOpen}
-        onClose={() => setIsSessionsDrawerOpen(false)}
+        onClose={() => {
+          setIsSessionsDrawerOpen(false);
+        }}
       />
       
       {/* Enhanced Mobile Sessions Button */}

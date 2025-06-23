@@ -274,7 +274,7 @@ const HomePage = () => {
         <div className="flex flex-wrap gap-2">
           <Button
             variant="contained"
-            className="bg-blue-600 hover:bg-blue-900 text-white font-bold py-2 px-4 animate-pulse"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 animate-pulse"
             onClick={() => setIsSessionsDrawerOpen(true)}
             icon={<ClipboardList size={16} />}
             testId="manage-sessions-button"

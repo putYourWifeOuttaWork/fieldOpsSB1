@@ -210,23 +210,6 @@ const AppLayout = () => {
               </div>
             </Link>
             
-            <button
-              className="w-full text-left block px-3 py-2 rounded-md hover:bg-gray-100 transition-colors"
-              onClick={() => {
-                setIsSessionsDrawerOpen(true);
-                setIsMobileMenuOpen(false);
-              }}
-              data-testid="mobile-sessions-button"
-            >
-              <div className="flex items-center space-x-2">
-                <ClipboardList size={18} />
-                <span>Active Sessions</span>
-                {hasActiveSessions && (
-                  <span className="ml-2 w-2 h-2 bg-accent-500 rounded-full"></span>
-                )}
-              </div>
-            </button>
-            
             <Link 
               to="/programs" 
               className="block px-3 py-2 rounded-md hover:bg-gray-100 transition-colors"
@@ -322,14 +305,18 @@ const AppLayout = () => {
         onClose={() => setIsSessionsDrawerOpen(false)}
       />
       
-      {/* Pulsing Session Indicator for Mobile */}
+      {/* Enhanced Mobile Sessions Button */}
       {showSessionIndicator && hasActiveSessions && (
         <div 
-          className="fixed right-[7vw] bottom-[12vh] z-50 w-12 h-12 rounded-full bg-primary-600 shadow-lg flex items-center justify-center animate-pulse cursor-pointer"
+          className="fixed bottom-4 right-4 z-50 flex items-center bg-primary-600 rounded-full shadow-lg cursor-pointer animate-pulse"
           onClick={() => setIsSessionsDrawerOpen(true)}
+          data-testid="mobile-sessions-button"
         >
-          <ClipboardList className="text-white" size={24} />
-          <span className="absolute top-0 right-0 w-3 h-3 bg-accent-500 rounded-full"></span>
+          <div className="flex items-center px-4 py-3">
+            <ClipboardList className="text-white" size={22} />
+            <span className="text-white font-medium ml-2">Sessions</span>
+            <span className="absolute -top-1 -right-1 w-3 h-3 bg-accent-500 rounded-full"></span>
+          </div>
         </div>
       )}
     </div>

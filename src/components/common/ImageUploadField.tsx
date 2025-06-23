@@ -176,6 +176,8 @@ const ImageUploadField = ({
             // Ensure onChange is called so parent components know we have a valid image
             onChange({
               file,
+              outdoor_temperature,
+              outdoor_humidity,
               tempImageKey,
               isDirty: false
             });

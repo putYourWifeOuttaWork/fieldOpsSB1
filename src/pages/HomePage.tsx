@@ -274,7 +274,7 @@ const HomePage = () => {
         <div className="flex flex-wrap gap-2">
           <Button
             variant="accent"
-            className="animate-pulse"
+            className="animate-break"
             onClick={() => setIsSessionsDrawerOpen(true)}
             icon={<ClipboardList size={16} />}
             testId="manage-sessions-button"

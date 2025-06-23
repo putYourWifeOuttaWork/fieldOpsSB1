@@ -55,6 +55,9 @@ interface GasifierFormProps {
   };
   disabled?: boolean;
   observationId?: string;
+  // Add submission environmental data as fallback values
+  submissionOutdoorTemperature?: number;
+  submissionOutdoorHumidity?: number;
 }
 
 export interface GasifierFormRef {
@@ -131,7 +134,9 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
   showRemoveButton,
   initialData,
   disabled = false,
-  observationId
+  observationId,
+  submissionOutdoorTemperature,
+  submissionOutdoorHumidity
 }, ref) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [tempImageKey, setTempImageKey] = useState<string | undefined>(initialData?.tempImageKey);
@@ -149,8 +154,9 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
       directionalPlacement: initialData?.directionalPlacement || null,
       placementStrategy: initialData?.placementStrategy || null,
       notes: initialData?.notes || '',
-      outdoor_temperature: initialData?.outdoor_temperature || null,
-      outdoor_humidity: initialData?.outdoor_humidity || null
+      // Prioritize existing data, then submission data, then null
+      outdoor_temperature: initialData?.outdoor_temperature || submissionOutdoorTemperature || null,
+      outdoor_humidity: initialData?.outdoor_humidity || submissionOutdoorHumidity || null
     },
     validationSchema: GasifierFormSchema,
     validateOnMount: !!initialData,
@@ -225,6 +231,8 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
       fileSize: data.file?.size,
       tempImageKey: data.tempImageKey,
       imageUrl: !!data.imageUrl ? '[present]' : '[not present]',
+      outdoor_temp: data.outdoor_temperature,
+      outdoor_humidity: data.outdoor_humidity,
       formId
     });
 
@@ -232,12 +240,19 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
     setTempImageKey(data.tempImageKey);
     setImageUrl(data.imageUrl);
     
-    if (data.outdoor_temperature) {
+    // Set environmental data with fallback to submission values
+    if (data.outdoor_temperature !== undefined) {
       formik.setFieldValue('outdoor_temperature', data.outdoor_temperature);
+    } else if (submissionOutdoorTemperature !== undefined && 
+               formik.values.outdoor_temperature === null) {
+      formik.setFieldValue('outdoor_temperature', submissionOutdoorTemperature);
     }
     
-    if (data.outdoor_humidity) {
+    if (data.outdoor_humidity !== undefined) {
       formik.setFieldValue('outdoor_humidity', data.outdoor_humidity);
+    } else if (submissionOutdoorHumidity !== undefined && 
+              formik.values.outdoor_humidity === null) {
+      formik.setFieldValue('outdoor_humidity', submissionOutdoorHumidity);
     }
     
     if (data.isDirty) {
@@ -263,7 +278,9 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
         hasData,
         hasImage,
         observationId: observationId || initialData?.observationId,
-        isDirty
+        isDirty,
+        outdoor_temperature: formik.values.outdoor_temperature,
+        outdoor_humidity: formik.values.outdoor_humidity
       });
 
       onUpdate({
@@ -278,6 +295,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
         directionalPlacement: formik.values.directionalPlacement as DirectionalPlacement,
         placementStrategy: formik.values.placementStrategy as PlacementStrategy,
         notes: formik.values.notes,
+        // Ensure we pass environmental data, using form values that might include fallback values
         outdoor_temperature: formik.values.outdoor_temperature || undefined,
         outdoor_humidity: formik.values.outdoor_humidity || undefined,
         isValid,

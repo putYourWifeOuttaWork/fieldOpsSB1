@@ -736,6 +736,19 @@ const SubmissionEditPage = () => {
         <div className="hidden md:flex space-x-2">
           {!isSessionReadOnly && (
             <>
+              
+
+              <Button
+                variant="danger"
+                onClick={handleCancel}
+                isLoading={isSaving}
+                disabled={!canEditSubmission}
+                icon={<XCircle size={16} />}
+                testId="cancel-submission-button"
+              >
+                Cancel
+              </Button>
+
               <Button
                 variant="outline"
                 onClick={handleShare}
@@ -744,18 +757,6 @@ const SubmissionEditPage = () => {
               >
                 Share
               </Button>
-
-              <Button
-                variant="danger"
-                onClick={handleCancel}
-                isLoading={isSaving}
-                disabled={!canEditSubmission}
-                icon={<XCircle size={16} />}
-                testId="Cancel-submission-button"
-              >
-                Cancel
-              </Button>
-              
               
               <Button
                 variant="outline"

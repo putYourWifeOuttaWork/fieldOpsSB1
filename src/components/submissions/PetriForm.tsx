@@ -127,8 +127,9 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
       surroundingWaterSchedule: initialData?.surroundingWaterSchedule || '',
       notes: initialData?.notes || '',
       placement: initialData?.placement || null,
-      outdoor_temperature: initialData?.outdoor_temperature || submissionOutdoorTemperature || null,
-      outdoor_humidity: initialData?.outdoor_humidity || submissionOutdoorHumidity || null
+      // Only use values from initialData, not from submission
+      outdoor_temperature: initialData?.outdoor_temperature || null,
+      outdoor_humidity: initialData?.outdoor_humidity || null
     },
     validationSchema: PetriFormSchema,
     validateOnMount: !!initialData,
@@ -213,17 +214,13 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
     setTempImageKey(data.tempImageKey);
     setImageUrl(data.imageUrl);
     
-    // Use the data from the ImageUploadField if available, otherwise use the submission fallbacks
+    // Only use environmental data explicitly provided by the image upload field
     if (data.outdoor_temperature !== undefined) {
       formik.setFieldValue('outdoor_temperature', data.outdoor_temperature);
-    } else if (submissionOutdoorTemperature !== undefined && formik.values.outdoor_temperature === null) {
-      formik.setFieldValue('outdoor_temperature', submissionOutdoorTemperature);
     }
     
     if (data.outdoor_humidity !== undefined) {
       formik.setFieldValue('outdoor_humidity', data.outdoor_humidity);
-    } else if (submissionOutdoorHumidity !== undefined && formik.values.outdoor_humidity === null) {
-      formik.setFieldValue('outdoor_humidity', submissionOutdoorHumidity);
     }
     
     if (data.isDirty) {

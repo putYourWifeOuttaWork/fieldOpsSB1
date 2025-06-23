@@ -751,7 +751,7 @@ const SubmissionEditPage = () => {
                 isLoading={isSaving}
                 disabled={!canEditSubmission}
                 icon={<XCircle size={16} />}
-                testId="save-submission-button"
+                testId="Cancel-submission-button"
               >
                 Cancel
               </Button>

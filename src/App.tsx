@@ -20,7 +20,6 @@ import { useSessionStore } from './stores/sessionStore';
 import { usePilotProgramStore } from './stores/pilotProgramStore';
 import NetworkStatusIndicator from './components/common/NetworkStatusIndicator';
 import { registerAuthErrorHandler } from './lib/queryClient';
-import { logger } from './utils/logger';
 
 // Lazy load pages to improve initial load time
 const HomePage = lazy(() => import('./pages/HomePage'));
@@ -56,16 +55,11 @@ function App() {
   const autoSyncInitialized = useRef(false);
   const visibilityChangeInitialized = useRef(false);
 
-  // Log app initialization
-  useEffect(() => {
-    logger.info('App initializing', { online: isOnline, timestamp: new Date().toISOString() });
-  }, [isOnline]);
-
   // Register auth error handler
   useEffect(() => {
     // Register a handler for auth errors
     registerAuthErrorHandler(() => {
-      logger.info('Auth error handler triggered in App.tsx');
+      console.log('Auth error handler triggered in App.tsx');
       setUser(null);
       setCurrentSessionId(null);
       resetAll();
@@ -117,7 +111,7 @@ function App() {
     
     const handleVisibilityChange = async () => {
       if (document.visibilityState === 'visible' && user) {
-        logger.info('App has come back into focus, checking connection state');
+        console.log('App has come back into focus, checking connection state');
         
         // *** KEY CHANGE: Force a hard reload immediately when the app comes back into focus ***
         window.location.reload(true);
@@ -211,7 +205,7 @@ function App() {
   useEffect(() => {
     const setupAuth = async () => {
       try {
-        logger.info('Setting up auth...');
+        console.log('Setting up auth...');
         
         // Check initial session
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -222,13 +216,13 @@ function App() {
         }
         
         if (sessionData.session) {
-          logger.info('User is authenticated:', sessionData.session.user.email);
+          console.log('User is authenticated:', sessionData.session.user.email);
           
           // Check if user is active
           const isActive = await checkUserActive(sessionData.session.user.id);
           
           if (!isActive) {
-            logger.info('User is deactivated');
+            console.log('User is deactivated');
             // Still set the user in auth store for DeactivatedUserPage to use
             setUser(sessionData.session.user);
             navigate('/deactivated');
@@ -236,17 +230,17 @@ function App() {
             setUser(sessionData.session.user);
           }
         } else {
-          logger.info('No active session found');
+          console.log('No active session found');
         }
         
         // Set up auth state listener
         const { data: authListener } = supabase.auth.onAuthStateChange(
           async (event, session) => {
-            logger.info('Auth state changed:', event);
+            console.log('Auth state changed:', event);
 
             // Handle token refresh failures specifically
             if (event === 'TOKEN_REFRESHED' && !session) {
-              logger.info('Token refresh failed, redirecting to login');
+              console.log('Token refresh failed, redirecting to login');
               setUser(null);
               setCurrentSessionId(null);
               resetAll();
@@ -260,7 +254,7 @@ function App() {
               const isActive = await checkUserActive(session.user.id);
               
               if (!isActive) {
-                logger.info('User is deactivated on auth state change');
+                console.log('User is deactivated on auth state change');
                 // Still set the user in auth store for DeactivatedUserPage to use
                 setUser(session.user);
                 navigate('/deactivated');
@@ -290,7 +284,7 @@ function App() {
           errorMessage.includes('Invalid Refresh Token') ||
           errorMessage.includes('Refresh Token Not Found')
         ) {
-          logger.info('Refresh token error, redirecting to login');
+          console.log('Refresh token error, redirecting to login');
           setUser(null);
           setCurrentSessionId(null);
           resetAll();

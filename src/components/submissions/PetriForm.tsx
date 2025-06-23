@@ -16,7 +16,7 @@ interface PetriFormProps {
   index: number;
   siteId: string;
   submissionSessionId: string;
-  onUpdate: (formId: string, data: { // Changed: Added formId as first argument
+  onUpdate: (data: {
     petriCode: string;
     imageFile: File | null;
     imageUrl?: string;
@@ -241,7 +241,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
         isDirty
       });
       
-      onUpdate(formId, { // Changed: Pass formId as first argument
+      onUpdate({
         petriCode: formik.values.petriCode,
         imageFile,
         imageUrl: initialData?.observationId ? initialData?.imageUrl : undefined,
@@ -281,8 +281,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
     initialData?.plantType,
     observationId,
     isDirty,
-    formId // Added formId to dependencies
-    // Removed onUpdate from dependencies as it's now passed as a stable reference
+    onUpdate
   ]);
 
   return (

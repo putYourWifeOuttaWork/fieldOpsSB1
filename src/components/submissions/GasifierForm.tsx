@@ -308,8 +308,8 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
     initialData?.imageUrl,
     observationId,
     isDirty,
-    formId // Added formId to dependencies
-    // Removed onUpdate from dependencies as it's now passed as a stable reference
+    formId,
+    onUpdate
   ]);
 
   return (

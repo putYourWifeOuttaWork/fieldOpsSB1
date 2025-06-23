@@ -308,7 +308,7 @@ const AppLayout = () => {
       {/* Enhanced Mobile Sessions Button */}
       {showSessionIndicator && hasActiveSessions && (
         <div 
-          className="fixed bottom-4 right-4 z-50 flex items-center bg-primary-600 rounded-full shadow-lg cursor-pointer animate-pulse"
+          className="fixed bottom-14 right-8 z-50 flex items-center bg-primary-600 rounded-full shadow-lg cursor-pointer animate-pulse"
           onClick={() => setIsSessionsDrawerOpen(true)}
           data-testid="mobile-sessions-button"
         >

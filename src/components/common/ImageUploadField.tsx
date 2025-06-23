@@ -163,6 +163,11 @@ const ImageUploadField = ({
             const file = new File([blob], `image-${imageId}.jpg`, { type: blob.type });
             setImageFile(file);
             
+            const environmentalData = {
+            outdoor_temperature: currentConditions?.temp,
+            outdoor_humidity: currentConditions?.RelativeHumidity || currentConditions?.humidity
+            };
+
             const url = URL.createObjectURL(blob);
             setImagePreview(url);
             
@@ -176,8 +181,7 @@ const ImageUploadField = ({
             // Ensure onChange is called so parent components know we have a valid image
             onChange({
               file,
-              outdoor_temperature,
-              outdoor_humidity,
+              environmentalData,
               tempImageKey,
               isDirty: false
             });
@@ -195,7 +199,7 @@ const ImageUploadField = ({
     };
     
     loadTempImage();
-  }, [tempImageKey, imageFile, outdoor_temperature, outdoor_humidity, imagePreview, imageId, onChange]);
+  }, [tempImageKey, imageFile, imagePreview, imageId, onChange, currentConditions]);
 
   const triggerFileInput = () => {
     if (disabled) return;

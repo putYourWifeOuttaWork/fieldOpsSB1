@@ -16,7 +16,7 @@ interface PetriFormProps {
   index: number;
   siteId: string;
   submissionSessionId: string;
-  onUpdate: (data: {
+  onUpdate: (formId: string, data: {
     petriCode: string;
     imageFile: File | null;
     imageUrl?: string;
@@ -53,6 +53,8 @@ interface PetriFormProps {
   };
   disabled?: boolean;
   observationId?: string;
+  submissionOutdoorTemperature?: number;
+  submissionOutdoorHumidity?: number;
 }
 
 export interface PetriFormRef {
@@ -108,7 +110,9 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
   showRemoveButton,
   initialData,
   disabled = false,
-  observationId
+  observationId,
+  submissionOutdoorTemperature,
+  submissionOutdoorHumidity
 }, ref) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [tempImageKey, setTempImageKey] = useState<string | undefined>(initialData?.tempImageKey);
@@ -123,8 +127,8 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
       surroundingWaterSchedule: initialData?.surroundingWaterSchedule || '',
       notes: initialData?.notes || '',
       placement: initialData?.placement || null,
-      outdoor_temperature: initialData?.outdoor_temperature || null,
-      outdoor_humidity: initialData?.outdoor_humidity || null
+      outdoor_temperature: initialData?.outdoor_temperature || submissionOutdoorTemperature || null,
+      outdoor_humidity: initialData?.outdoor_humidity || submissionOutdoorHumidity || null
     },
     validationSchema: PetriFormSchema,
     validateOnMount: !!initialData,
@@ -200,19 +204,26 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
       fileSize: data.file?.size,
       tempImageKey: data.tempImageKey,
       imageUrl: !!data.imageUrl ? '[present]' : '[not present]',
-      formId
+      formId,
+      outdoor_temperature: data.outdoor_temperature,
+      outdoor_humidity: data.outdoor_humidity
     });
     
     setImageFile(data.file);
     setTempImageKey(data.tempImageKey);
     setImageUrl(data.imageUrl);
     
-    if (data.outdoor_temperature) {
+    // Use the data from the ImageUploadField if available, otherwise use the submission fallbacks
+    if (data.outdoor_temperature !== undefined) {
       formik.setFieldValue('outdoor_temperature', data.outdoor_temperature);
+    } else if (submissionOutdoorTemperature !== undefined && formik.values.outdoor_temperature === null) {
+      formik.setFieldValue('outdoor_temperature', submissionOutdoorTemperature);
     }
     
-    if (data.outdoor_humidity) {
+    if (data.outdoor_humidity !== undefined) {
       formik.setFieldValue('outdoor_humidity', data.outdoor_humidity);
+    } else if (submissionOutdoorHumidity !== undefined && formik.values.outdoor_humidity === null) {
+      formik.setFieldValue('outdoor_humidity', submissionOutdoorHumidity);
     }
     
     if (data.isDirty) {
@@ -238,10 +249,12 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
         hasData,
         hasImage,
         observationId: observationId || initialData?.observationId,
-        isDirty
+        isDirty,
+        outdoor_temperature: formik.values.outdoor_temperature,
+        outdoor_humidity: formik.values.outdoor_humidity
       });
       
-      onUpdate({
+      onUpdate(formId, {
         petriCode: formik.values.petriCode,
         imageFile,
         imageUrl: initialData?.observationId ? initialData?.imageUrl : undefined,
@@ -281,7 +294,8 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
     initialData?.plantType,
     observationId,
     isDirty,
-    onUpdate
+    onUpdate,
+    formId
   ]);
 
   return (

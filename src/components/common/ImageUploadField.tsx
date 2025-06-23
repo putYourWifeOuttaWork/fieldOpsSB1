@@ -178,13 +178,13 @@ const ImageUploadField = ({
               fileSize: file.size
             });
 
-            /* Ensure onChange is called so parent components know we have a valid image
+            //Ensure onChange is called so parent components know we have a valid image
             onChange({
               file,
               tempImageKey,
               isDirty: false,
               ...environmentalData // '...' i guess is a thing...
-            }); */
+            });
 
             return () => {
               URL.revokeObjectURL(url);

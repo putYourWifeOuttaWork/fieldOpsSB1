@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { supabase } from '../../lib/supabaseClient';
-import { usePilotProgramStore } from '../../stores/pilotProgramStore';
+import { supabase } from '../lib/supabaseClient';
+import { usePilotProgramStore } from '../stores/pilotProgramStore';
 import { 
   ArrowLeft, 
   Save, 
@@ -26,7 +26,7 @@ import { format, formatDistanceToNow, differenceInSeconds, set } from 'date-fns'
 import Button from '../components/common/Button';
 import Card, { CardHeader, CardContent } from '../components/common/Card';
 import LoadingScreen from '../components/common/LoadingScreen';
-import { useAuthStore } from '../../stores/authStore';
+import { useAuthStore } from '../stores/authStore';
 import PetriForm, { PetriFormRef } from '../components/submissions/PetriForm';
 import GasifierForm, { GasifierFormRef } from '../components/submissions/GasifierForm';
 import { toast } from 'react-toastify';

@@ -273,7 +273,7 @@ const HomePage = () => {
         
         <div className="flex flex-wrap gap-2">
           <Button
-            variant="outline"
+            variant="containd"
             className="animate-pulse"
             onClick={() => setIsSessionsDrawerOpen(true)}
             icon={<ClipboardList size={16} />}

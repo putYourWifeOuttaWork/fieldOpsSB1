@@ -2,6 +2,11 @@ import { supabase } from '../lib/supabaseClient';
 import offlineStorage from './offlineStorage';
 import { toast } from 'react-toastify';
 import { retry } from './helpers';
+import { uploadImage } from './submissionUtils';
+import { createLogger } from './logger';
+
+// Create a logger for this module
+const logger = createLogger('SyncManager');
 
 // Check if we're online
 const isOnline = () => navigator.onLine;
@@ -49,6 +54,8 @@ export const syncPendingSubmissions = async (onProgress?: (current: number, tota
       const { submission, petriObservations, gasifierObservations } = pendingItem;
       const tempSubmissionId = submission.submission_id; // Store the temporary ID
       
+      logger.debug(`Syncing submission ${tempSubmissionId} with ${petriObservations.length} petri obs and ${gasifierObservations.length} gasifier obs`);
+      
       // Insert submission with retry logic
       const { data: submissionData, error: submissionError } = await retry(() => 
         supabase
@@ -69,14 +76,58 @@ export const syncPendingSubmissions = async (onProgress?: (current: number, tota
       // Insert petri observations with retry logic
       for (const observation of petriObservations) {
         const oldObservationId = observation.observation_id; // Store the temporary ID
+        let imageUrl = observation.image_url;
+        let obsToInsert = { ...observation };
+        
+        // Check if there's a temp image key
+        if (observation.tempImageKey) {
+          logger.debug(`Found temp image key for petri: ${observation.tempImageKey}`);
+          try {
+            // Get the image blob from IndexedDB
+            const imageBlob = await offlineStorage.getTempImage(observation.tempImageKey);
+            
+            if (imageBlob) {
+              // Create a File object from the Blob
+              const imageFile = new File([imageBlob], `image-${oldObservationId}.jpg`, { 
+                type: imageBlob.type || 'image/jpeg' 
+              });
+              
+              // Upload the image to Supabase
+              imageUrl = await uploadImage(
+                imageFile, 
+                submission.site_id, 
+                newSubmissionId, 
+                oldObservationId,
+                'petri'
+              );
+              
+              if (imageUrl) {
+                logger.debug(`Successfully uploaded temp image for petri ${oldObservationId}, got URL: ${imageUrl.substring(0, 50)}...`);
+                obsToInsert.image_url = imageUrl;
+                
+                // Clean up the temp image after successful upload
+                await offlineStorage.deleteTempImage(observation.tempImageKey);
+                logger.debug(`Deleted temp image for petri ${oldObservationId} with key ${observation.tempImageKey}`);
+              }
+            } else {
+              logger.debug(`No temp image found for key: ${observation.tempImageKey}`);
+            }
+          } catch (err) {
+            logger.error(`Error processing temp image for petri ${oldObservationId}:`, err);
+          }
+        }
+        
+        // Remove temporary properties before inserting to database
+        delete obsToInsert.tempImageKey;
+        delete obsToInsert.imageFile;
+        
+        // Ensure submission_id is updated to the new one
+        obsToInsert.submission_id = newSubmissionId;
         
         const { data: obsData, error: observationError } = await retry(() => 
           supabase
             .from('petri_observations')
-            .insert({
-              ...observation,
-              submission_id: submissionData.submission_id
-            })
+            .insert(obsToInsert)
             .select('observation_id')
             .single()
         );
@@ -93,14 +144,58 @@ export const syncPendingSubmissions = async (onProgress?: (current: number, tota
       // Insert gasifier observations with retry logic
       for (const observation of gasifierObservations) {
         const oldObservationId = observation.observation_id; // Store the temporary ID
+        let imageUrl = observation.image_url;
+        let obsToInsert = { ...observation };
+        
+        // Check if there's a temp image key
+        if (observation.tempImageKey) {
+          logger.debug(`Found temp image key for gasifier: ${observation.tempImageKey}`);
+          try {
+            // Get the image blob from IndexedDB
+            const imageBlob = await offlineStorage.getTempImage(observation.tempImageKey);
+            
+            if (imageBlob) {
+              // Create a File object from the Blob
+              const imageFile = new File([imageBlob], `image-${oldObservationId}.jpg`, { 
+                type: imageBlob.type || 'image/jpeg' 
+              });
+              
+              // Upload the image to Supabase
+              imageUrl = await uploadImage(
+                imageFile, 
+                submission.site_id, 
+                newSubmissionId, 
+                oldObservationId,
+                'gasifier'
+              );
+              
+              if (imageUrl) {
+                logger.debug(`Successfully uploaded temp image for gasifier ${oldObservationId}, got URL: ${imageUrl.substring(0, 50)}...`);
+                obsToInsert.image_url = imageUrl;
+                
+                // Clean up the temp image after successful upload
+                await offlineStorage.deleteTempImage(observation.tempImageKey);
+                logger.debug(`Deleted temp image for gasifier ${oldObservationId} with key ${observation.tempImageKey}`);
+              }
+            } else {
+              logger.debug(`No temp image found for key: ${observation.tempImageKey}`);
+            }
+          } catch (err) {
+            logger.error(`Error processing temp image for gasifier ${oldObservationId}:`, err);
+          }
+        }
+        
+        // Remove temporary properties before inserting to database
+        delete obsToInsert.tempImageKey;
+        delete obsToInsert.imageFile;
+        
+        // Ensure submission_id is updated to the new one
+        obsToInsert.submission_id = newSubmissionId;
         
         const { data: obsData, error: observationError } = await retry(() => 
           supabase
             .from('gasifier_observations')
-            .insert({
-              ...observation,
-              submission_id: submissionData.submission_id
-            })
+            .insert(obsToInsert)
             .select('observation_id')
             .single()
         );

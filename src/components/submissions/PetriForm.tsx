@@ -1,7 +1,7 @@
 import { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { Trash2, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trash2, MapPin, ChevronDown, ChevronUp, Save, AlertCircle } from 'lucide-react';
 import Button from '../common/Button';
 import ImageUploadField from '../common/ImageUploadField';
 import { PetriPlacement, PetriPlacementDynamics } from '../../lib/types';
@@ -36,6 +36,7 @@ interface PetriFormProps {
     isDirty: boolean;
   }) => void;
   onRemove: () => void;
+  onQuickSave?: (formId: string) => void;
   showRemoveButton: boolean;
   initialData?: {
     petriCode: string;
@@ -55,6 +56,7 @@ interface PetriFormProps {
   observationId?: string;
   submissionOutdoorTemperature?: number;
   submissionOutdoorHumidity?: number;
+  isSaving?: boolean;
 }
 
 export interface PetriFormRef {
@@ -107,12 +109,14 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
   submissionSessionId,
   onUpdate, 
   onRemove,
+  onQuickSave,
   showRemoveButton,
   initialData,
   disabled = false,
   observationId,
   submissionOutdoorTemperature,
-  submissionOutdoorHumidity
+  submissionOutdoorHumidity,
+  isSaving = false
 }, ref) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [tempImageKey, setTempImageKey] = useState<string | undefined>(initialData?.tempImageKey);
@@ -311,11 +315,24 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
     formId
   ]);
 
+  // Handle quick save button click
+  const handleQuickSave = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onQuickSave) {
+      onQuickSave(formId);
+    }
+  };
+
   return (
     <div id={id} className="border border-gray-200 rounded-lg p-3 bg-gray-50" data-testid={`petri-form-${formId}`}>
       <div className="flex justify-between items-center mb-2">
         <div className="flex items-center">
-          <h4 className="font-medium text-gray-900">Petri Labeled: {formik.values.petriCode}</h4>
+          <h4 className="font-medium text-gray-900">
+            Petri Labeled: {formik.values.petriCode}
+            {isDirty && (
+              <span className="ml-2 text-xs px-1.5 py-0.5 bg-warning-100 text-warning-800 rounded-full">Unsaved</span>
+            )}
+          </h4>
           {/* Toggle expand/collapse button */}
           <button 
             type="button"
@@ -331,19 +348,37 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
           </button>
         </div>
         
-        {showRemoveButton && !disabled && (
-          <Button 
-            type="button" 
-            variant="danger" 
-            size="sm"
-            icon={<Trash2 size={16} />}
-            onClick={onRemove}
-            className="!py-1"
-            testId={`remove-petri-button-${formId}`}
-          >
-            Remove
-          </Button>
-        )}
+        <div className="flex space-x-2">
+          {isDirty && !disabled && onQuickSave && (
+            <Button 
+              type="button" 
+              variant="secondary" 
+              size="sm"
+              icon={<Save size={16} />}
+              onClick={handleQuickSave}
+              className="!py-1"
+              isLoading={isSaving}
+              disabled={isSaving || disabled}
+              testId={`quick-save-petri-button-${formId}`}
+            >
+              Save
+            </Button>
+          )}
+          
+          {showRemoveButton && !disabled && (
+            <Button 
+              type="button" 
+              variant="danger" 
+              size="sm"
+              icon={<Trash2 size={16} />}
+              onClick={onRemove}
+              className="!py-1"
+              testId={`remove-petri-button-${formId}`}
+            >
+              Remove
+            </Button>
+          )}
+        </div>
       </div>
       
       {/* Always visible: Two-column layout for image and basic info */}

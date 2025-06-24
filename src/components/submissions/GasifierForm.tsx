@@ -1,7 +1,7 @@
 import { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { Trash2, Info, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trash2, Info, ChevronDown, ChevronUp, Save } from 'lucide-react';
 import Button from '../common/Button';
 import ImageUploadField from '../common/ImageUploadField';
 import { ChemicalType, PlacementHeight, DirectionalPlacement, PlacementStrategy } from '../../lib/types';
@@ -37,6 +37,7 @@ interface GasifierFormProps {
     isDirty: boolean;
   }) => void;
   onRemove: () => void;
+  onQuickSave?: (formId: string) => void;
   showRemoveButton: boolean;
   initialData?: {
     gasifierCode: string;
@@ -57,6 +58,7 @@ interface GasifierFormProps {
   observationId?: string;
   submissionOutdoorTemperature?: number;
   submissionOutdoorHumidity?: number;
+  isSaving?: boolean;
 }
 
 export interface GasifierFormRef {
@@ -130,12 +132,14 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
   submissionSessionId,
   onUpdate, 
   onRemove,
+  onQuickSave,
   showRemoveButton,
   initialData,
   disabled = false,
   observationId,
   submissionOutdoorTemperature,
-  submissionOutdoorHumidity
+  submissionOutdoorHumidity,
+  isSaving = false
 }, ref) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [tempImageKey, setTempImageKey] = useState<string | undefined>(initialData?.tempImageKey);
@@ -338,11 +342,24 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
     formId
   ]);
 
+  // Handle quick save button click
+  const handleQuickSave = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onQuickSave) {
+      onQuickSave(formId);
+    }
+  };
+
   return (
     <div id={id} className="border border-gray-200 rounded-lg p-3 bg-gray-50" data-testid={`gasifier-form-${formId}`}>
       <div className="flex justify-between items-center mb-2">
         <div className="flex items-center">
-          <h4 className="font-medium text-gray-900">Gasifier Labeled: {formik.values.gasifierCode}</h4>
+          <h4 className="font-medium text-gray-900">
+            Gasifier Labeled: {formik.values.gasifierCode}
+            {isDirty && (
+              <span className="ml-2 text-xs px-1.5 py-0.5 bg-warning-100 text-warning-800 rounded-full">Unsaved</span>
+            )}
+          </h4>
           {/* Toggle expand/collapse button */}
           <button 
             type="button"
@@ -358,19 +375,37 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
           </button>
         </div>
         
-        {showRemoveButton && !disabled && (
-          <Button 
-            type="button" 
-            variant="danger" 
-            size="sm"
-            icon={<Trash2 size={16} />}
-            onClick={onRemove}
-            className="!py-1"
-            testId={`remove-gasifier-button-${formId}`}
-          >
-            Remove
-          </Button>
-        )}
+        <div className="flex space-x-2">
+          {isDirty && !disabled && onQuickSave && (
+            <Button 
+              type="button" 
+              variant="secondary" 
+              size="sm"
+              icon={<Save size={16} />}
+              onClick={handleQuickSave}
+              className="!py-1"
+              isLoading={isSaving}
+              disabled={isSaving || disabled}
+              testId={`quick-save-gasifier-button-${formId}`}
+            >
+              Save
+            </Button>
+          )}
+          
+          {showRemoveButton && !disabled && (
+            <Button 
+              type="button" 
+              variant="danger" 
+              size="sm"
+              icon={<Trash2 size={16} />}
+              onClick={onRemove}
+              className="!py-1"
+              testId={`remove-gasifier-button-${formId}`}
+            >
+              Remove
+            </Button>
+          )}
+        </div>
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

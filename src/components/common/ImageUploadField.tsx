@@ -141,6 +141,7 @@ const ImageUploadField = ({
         onChange({ 
           file, 
           tempImageKey: newTempKey,
+          imageUrl: reader.result as string,
           isDirty: true,
           ...environmentalData
         });
@@ -174,8 +175,8 @@ const ImageUploadField = ({
             setImageFile(file);
             
             const environmentalData = {
-            outdoor_temperature: currentConditions?.temp,
-            outdoor_humidity: currentConditions?.RelativeHumidity || currentConditions?.humidity
+              outdoor_temperature: currentConditions?.temp,
+              outdoor_humidity: currentConditions?.RelativeHumidity || currentConditions?.humidity
             };
 
             const url = URL.createObjectURL(blob);
@@ -192,8 +193,9 @@ const ImageUploadField = ({
             onChange({
               file,
               tempImageKey,
+              imageUrl: url,
               isDirty: false,
-              ...environmentalData // '...' i guess is a thing...
+              ...environmentalData
             });
 
             return () => {

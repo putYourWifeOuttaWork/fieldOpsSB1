@@ -272,7 +272,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
       onUpdate(formId, {
         petriCode: formik.values.petriCode,
         imageFile,
-        imageUrl: initialData?.observationId ? initialData?.imageUrl : undefined,
+        imageUrl: imageUrl,
         tempImageKey,
         plantType: initialData?.plantType || 'Other Fresh Perishable',
         fungicideUsed: formik.values.fungicideUsed,

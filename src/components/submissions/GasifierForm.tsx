@@ -202,7 +202,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
                   hasImage;
   
   const toggleExpanded = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent bubbling to parent containers
+    e.stopPropagation();
     setIsExpanded(!isExpanded);
   };
   
@@ -297,7 +297,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
       onUpdate(formId, {
         gasifierCode: formik.values.gasifierCode,
         imageFile,
-        imageUrl: initialData?.observationId ? initialData?.imageUrl : undefined,
+        imageUrl,
         tempImageKey,
         chemicalType: formik.values.chemicalType,
         measure: formik.values.measure,

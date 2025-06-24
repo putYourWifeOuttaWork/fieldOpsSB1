@@ -57,6 +57,7 @@ interface GasifierFormProps {
   observationId?: string;
   submissionOutdoorTemperature?: number;
   submissionOutdoorHumidity?: number;
+  onSaveTrigger?: () => void;  // New prop
 }
 
 export interface GasifierFormRef {
@@ -135,7 +136,8 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
   disabled = false,
   observationId,
   submissionOutdoorTemperature,
-  submissionOutdoorHumidity
+  submissionOutdoorHumidity,
+  onSaveTrigger
 }, ref) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [tempImageKey, setTempImageKey] = useState<string | undefined>(initialData?.tempImageKey);
@@ -384,6 +386,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
           onChange={handleImageChange}
           disabled={disabled}
           testId={`gasifier-image-upload-${formId}`}
+          onSaveTrigger={onSaveTrigger}
         />
 
         {/* Column 2: Code and Placement Height */}

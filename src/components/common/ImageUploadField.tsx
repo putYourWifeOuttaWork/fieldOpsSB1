@@ -3,6 +3,7 @@ import { Upload, Check, AlertCircle, XCircle } from 'lucide-react';
 import offlineStorage from '../../utils/offlineStorage';
 import useWeather from '../../hooks/useWeather';
 import { createLogger } from '../../utils/logger';
+import SavePromptTooltip from './SavePromptTooltip';
 
 // Create a component-specific logger
 const logger = createLogger('ImageUploadField');
@@ -22,6 +23,7 @@ interface ImageUploadFieldProps {
     isDirty: boolean;
   }) => void;
   onClear?: () => void;
+  onSaveTrigger?: () => void;  // New prop for save function
   disabled?: boolean;
   testId?: string;
   className?: string;
@@ -35,6 +37,7 @@ const ImageUploadField = ({
   imageId,
   onChange,
   onClear,
+  onSaveTrigger,  // New prop
   disabled = false,
   testId,
   className = ''
@@ -45,7 +48,9 @@ const ImageUploadField = ({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [tempImageKey, setTempImageKey] = useState<string | undefined>(initialTempImageKey);
   const [showClearButton, setShowClearButton] = useState(false);
+  const [showSavePrompt, setShowSavePrompt] = useState(false);  // New state for save prompt
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imagePreviewRef = useRef<HTMLDivElement>(null);  // New ref for image container
   
   // Weather hook for environmental data capture
   const { currentConditions } = useWeather();
@@ -139,6 +144,11 @@ const ImageUploadField = ({
           isDirty: true,
           ...environmentalData
         });
+        
+        // Show save prompt tooltip if onSaveTrigger is provided
+        if (onSaveTrigger) {
+          setShowSavePrompt(true);
+        }
         
       } catch (error) {
         logger.error('Error storing image:', error);
@@ -255,6 +265,7 @@ const ImageUploadField = ({
         {label}
       </label>
       <div 
+        ref={imagePreviewRef}  // Add ref to the image container
         onClick={disabled ? undefined : triggerFileInput}
         className={`
           relative flex flex-col items-center justify-center w-full h-28
@@ -331,6 +342,16 @@ const ImageUploadField = ({
         <p className="mt-1 text-sm text-error-600">{uploadError || 'Take A Photo, Do Not Upload'}</p>
       ) : (
        <center><p className="text-xs text-gray-500 mt-1">Click - Take A Photo - Done</p></center>
+      )}
+      
+      {/* Save Prompt Tooltip */}
+      {onSaveTrigger && (
+        <SavePromptTooltip
+          isOpen={showSavePrompt}
+          onClose={() => setShowSavePrompt(false)}
+          onSave={onSaveTrigger}
+          targetRef={imagePreviewRef}
+        />
       )}
     </div>
   );

@@ -55,6 +55,7 @@ interface PetriFormProps {
   observationId?: string;
   submissionOutdoorTemperature?: number;
   submissionOutdoorHumidity?: number;
+  onSaveTrigger?: () => void;  // New prop
 }
 
 export interface PetriFormRef {
@@ -112,7 +113,8 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
   disabled = false,
   observationId,
   submissionOutdoorTemperature,
-  submissionOutdoorHumidity
+  submissionOutdoorHumidity,
+  onSaveTrigger
 }, ref) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [tempImageKey, setTempImageKey] = useState<string | undefined>(initialData?.tempImageKey);
@@ -358,6 +360,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
           onChange={handleImageChange}
           disabled={disabled}
           testId={`petri-image-upload-${formId}`}
+          onSaveTrigger={onSaveTrigger}
         />
 
         {/* Column 2: Code and Placement */}

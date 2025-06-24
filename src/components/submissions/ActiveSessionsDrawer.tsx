@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ClipboardList, Clock, User, BarChart4, X, ChevronRight, Users, Hash, PlusCircle } from 'lucide-react';
+import { ClipboardList, Clock, User, BarChart4, X, ChevronRight, Users, Hash, PlusCircle, FileText, Hand } from 'lucide-react';
 import Button from '../common/Button';
 import Input from '../common/Input';
 import Modal from '../common/Modal';
 import { useSessionStore } from '../../stores/sessionStore';
+import { usePilotProgramStore } from '../../stores/pilotProgramStore';
 import sessionManager from '../../lib/sessionManager';
 import { formatDistanceToNow } from 'date-fns';
 import { supabase } from '../../lib/supabaseClient';
@@ -18,6 +19,7 @@ interface ActiveSessionsDrawerProps {
 
 const ActiveSessionsDrawer: React.FC<ActiveSessionsDrawerProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
+  const { selectedProgram, selectedSite } = usePilotProgramStore();
   const { 
     activeSessions, 
     setActiveSessions, 
@@ -116,6 +118,14 @@ const ActiveSessionsDrawer: React.FC<ActiveSessionsDrawerProps> = ({ isOpen, onC
     showUnclaimedSessions ? session.is_unclaimed : !session.is_unclaimed
   );
 
+  // Function to create a new session
+  const handleCreateNewSession = () => {
+    if (selectedProgram && selectedSite) {
+      navigate(`/programs/${selectedProgram.program_id}/sites/${selectedSite.site_id}/new-submission`);
+      onClose();
+    }
+  };
+
   return (
     <div className={`fixed inset-0 z-50 ${isOpen ? 'block' : 'hidden'}`}>
       {/* Backdrop */}
@@ -194,8 +204,8 @@ const ActiveSessionsDrawer: React.FC<ActiveSessionsDrawerProps> = ({ isOpen, onC
             
             {filteredSessions.length === 0 ? (
               <div className="text-center py-12 bg-gray-50 rounded-lg">
-                <ClipboardList size={48} className="mx-auto text-gray-300 mb-3" />
-                <p className="text-gray-600 font-medium">
+                <FileText size={48} className="mx-auto text-gray-300 mb-3" />
+                <p className="text-gray-600 font-medium mb-2">
                   {showUnclaimedSessions 
                     ? 'No Unclaimed Sessions' 
                     : 'No Active Sessions'}
@@ -203,8 +213,18 @@ const ActiveSessionsDrawer: React.FC<ActiveSessionsDrawerProps> = ({ isOpen, onC
                 <p className="text-sm text-gray-500 mt-1">
                   {showUnclaimedSessions 
                     ? 'There are no unclaimed sessions available for you to take.' 
-                    : 'When you start a submission, it will appear here.'}
+                    : 'When You Own or are Shared a Session It Will Show Here'}
                 </p>
+                {!showUnclaimedSessions && selectedProgram && selectedSite && (
+                  <Button
+                    variant="primary"
+                    className="mt-4 bg-green-600 hover:bg-green-700"
+                    onClick={handleCreateNewSession}
+                    testId="create-new-session-button"
+                  >
+                    Create New Session
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="space-y-4">
@@ -280,17 +300,32 @@ const ActiveSessionsDrawer: React.FC<ActiveSessionsDrawerProps> = ({ isOpen, onC
                           ? `Created ${formatDistanceToNow(new Date(session.session_start_time), { addSuffix: true })}` 
                           : `Updated ${formatDistanceToNow(new Date(session.last_activity_time), { addSuffix: true })}`}
                       </span>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => session.is_unclaimed 
-                          ? handleClaimSession(session.session_id)
-                          : navigate(`/programs/${session.program_id}/sites/${session.site_id}/submissions/${session.submission_id}/edit`)
-                        }
-                        className="!py-1 !px-2 text-xs"
-                      >
-                        {session.is_unclaimed ? 'Claim' : 'Resume'}
-                      </Button>
+                      {session.is_unclaimed ? (
+                        <Button
+                          variant="accent"
+                          size="sm"
+                          onClick={() => {
+                            handleClaimSession(session.session_id);
+                            // The drawer close is handled in handleClaimSession when successful
+                          }}
+                          className="!py-1 !px-2 text-xs"
+                          icon={<Hand size={12} className="mr-1" />}
+                        >
+                          Claim
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => {
+                            navigate(`/programs/${session.program_id}/sites/${session.site_id}/submissions/${session.submission_id}/edit`);
+                            onClose();
+                          }}
+                          className="!py-1 !px-2 text-xs"
+                        >
+                          Resume
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}

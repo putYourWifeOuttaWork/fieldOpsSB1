@@ -213,20 +213,6 @@ const SubmissionEditPage = () => {
         // Update title in browser
         document.title = `Submission #${submissionData.global_submission_id || ''} - GRMTek Sporeless`;
         
-        // Fetch all temporary image keys for this session
-        let tempImageKeys: string[] = [];
-        try {
-          tempImageKeys = await offlineStorage.listTempImageKeys();
-          logger.debug(`Found ${tempImageKeys.length} temp image keys total`);
-        } catch (error) {
-          logger.error('Error fetching temp image keys:', error);
-        }
-        
-        // Get the session ID to use for filtering temp image keys
-        const sessionIdForFiltering = sessionData?.session_id || submissionId;
-        const sessionTempImageKeys = tempImageKeys.filter(key => key.startsWith(sessionIdForFiltering));
-        logger.debug(`Found ${sessionTempImageKeys.length} temp image keys for session ${sessionIdForFiltering}`);
-        
         // Fetch petri observations
         const { data: petriData, error: petriError } = await supabase
           .from('petri_observations')
@@ -249,19 +235,12 @@ const SubmissionEditPage = () => {
         // Initialize petri form refs
         const petriFormRefs = (petriData || []).map(obs => {
           const formRef = React.createRef<PetriFormRef>();
-          
-          // Find matching temp image key for this observation
-          const matchingKey = sessionTempImageKeys.find(key => 
-            key.includes(obs.observation_id)
-          );
-          
           return { 
             id: obs.observation_id, 
             ref: formRef, 
             isValid: !!obs.image_url,
             isDirty: false,
-            observationId: obs.observation_id,
-            tempImageKey: matchingKey
+            observationId: obs.observation_id
           };
         });
         setPetriForms(petriFormRefs);
@@ -270,19 +249,12 @@ const SubmissionEditPage = () => {
         // Initialize gasifier form refs
         const gasifierFormRefs = (gasifierData || []).map(obs => {
           const formRef = React.createRef<GasifierFormRef>();
-          
-          // Find matching temp image key for this observation
-          const matchingKey = sessionTempImageKeys.find(key => 
-            key.includes(obs.observation_id)
-          );
-          
           return { 
             id: obs.observation_id, 
             ref: formRef, 
             isValid: !!obs.image_url,
             isDirty: false,
-            observationId: obs.observation_id,
-            tempImageKey: matchingKey
+            observationId: obs.observation_id
           };
         });
         setGasifierForms(gasifierFormRefs);
@@ -291,17 +263,11 @@ const SubmissionEditPage = () => {
         // Initialize petriObservationData state
         const initialPetriData: {[key: string]: any} = {};
         petriData?.forEach(observation => {
-          // Find matching temp image key for this observation
-          const matchingKey = sessionTempImageKeys.find(key => 
-            key.includes(observation.observation_id)
-          );
-          
           initialPetriData[observation.observation_id] = {
             formId: observation.observation_id,
             petriCode: observation.petri_code,
             imageFile: null,
             imageUrl: observation.image_url,
-            tempImageKey: matchingKey,
             plantType: observation.plant_type,
             fungicideUsed: observation.fungicide_used,
             surroundingWaterSchedule: observation.surrounding_water_schedule,
@@ -311,7 +277,7 @@ const SubmissionEditPage = () => {
             observationId: observation.observation_id,
             isValid: !!observation.image_url,
             hasData: true,
-            hasImage: !!observation.image_url || !!matchingKey,
+            hasImage: !!observation.image_url,
             isDirty: false,
             outdoor_temperature: observation.outdoor_temperature,
             outdoor_humidity: observation.outdoor_humidity
@@ -322,17 +288,11 @@ const SubmissionEditPage = () => {
         // Initialize gasifierObservationData state
         const initialGasifierData: {[key: string]: any} = {};
         gasifierData?.forEach(observation => {
-          // Find matching temp image key for this observation
-          const matchingKey = sessionTempImageKeys.find(key => 
-            key.includes(observation.observation_id)
-          );
-          
           initialGasifierData[observation.observation_id] = {
             formId: observation.observation_id,
             gasifierCode: observation.gasifier_code,
             imageFile: null,
             imageUrl: observation.image_url,
-            tempImageKey: matchingKey,
             chemicalType: observation.chemical_type,
             measure: observation.measure,
             anomaly: observation.anomaly,
@@ -343,7 +303,7 @@ const SubmissionEditPage = () => {
             observationId: observation.observation_id,
             isValid: !!observation.image_url,
             hasData: true,
-            hasImage: !!observation.image_url || !!matchingKey,
+            hasImage: !!observation.image_url,
             isDirty: false,
             outdoor_temperature: observation.outdoor_temperature,
             outdoor_humidity: observation.outdoor_humidity
@@ -458,7 +418,6 @@ const SubmissionEditPage = () => {
           petriCode: data.petriCode,
           imageFile: data.imageFile,
           imageUrl: data.imageUrl,
-          tempImageKey: data.tempImageKey,
           plantType: data.plantType || 'Other Fresh Perishable',
           fungicideUsed: data.fungicideUsed,
           surroundingWaterSchedule: data.surroundingWaterSchedule,
@@ -469,7 +428,8 @@ const SubmissionEditPage = () => {
           isValid: data.isValid,
           outdoor_temperature: data.outdoor_temperature,
           outdoor_humidity: data.outdoor_humidity,
-          formId: data.formId
+          formId: data.formId,
+          tempImageKey: data.tempImageKey,
         }));
       
       // Get data from gasifier forms
@@ -479,7 +439,6 @@ const SubmissionEditPage = () => {
           gasifierCode: data.gasifierCode,
           imageFile: data.imageFile,
           imageUrl: data.imageUrl,
-          tempImageKey: data.tempImageKey,
           chemicalType: data.chemicalType,
           measure: data.measure,
           anomaly: data.anomaly,
@@ -491,7 +450,8 @@ const SubmissionEditPage = () => {
           isValid: data.isValid,
           outdoor_temperature: data.outdoor_temperature,
           outdoor_humidity: data.outdoor_humidity,
-          formId: data.formId
+          formId: data.formId,
+          tempImageKey: data.tempImageKey,
         }));
       
       // If online, update the submission using the hook function
@@ -914,8 +874,6 @@ const SubmissionEditPage = () => {
               <div className="space-y-4">
                 {petriForms.map((form, index) => {
                   logger.debug(`Rendering PetriForm ${form.id} with tempImageKey: ${form.tempImageKey || 'undefined'}`);
-                  const observation = petriObservations.find(obs => obs.observation_id === form.id);
-                  
                   return (
                     <PetriForm
                       key={form.id}
@@ -950,26 +908,23 @@ const SubmissionEditPage = () => {
                           tempImageKey: data.tempImageKey,
                           isValid: data.isValid,
                           isDirty: data.isDirty,
-                          hasImage: data.hasImage,
-                          outdoor_temperature: data.outdoor_temperature,
-                          outdoor_humidity: data.outdoor_humidity
+                          hasImage: data.hasImage
                         });
                       }}
                       onRemove={() => removePetriForm(form.id)}
                       showRemoveButton={petriForms.length > 1}
-                      initialData={observation ? {
-                        petriCode: observation.petri_code,
-                        imageUrl: observation.image_url,
-                        tempImageKey: form.tempImageKey, // Pass the tempImageKey from form state
-                        plantType: observation.plant_type,
-                        fungicideUsed: observation.fungicide_used,
-                        surroundingWaterSchedule: observation.surrounding_water_schedule,
-                        notes: observation.notes || '',
-                        placement: observation.placement,
-                        placement_dynamics: observation.placement_dynamics,
-                        observationId: observation.observation_id,
-                        outdoor_temperature: observation.outdoor_temperature,
-                        outdoor_humidity: observation.outdoor_humidity
+                      initialData={petriObservations.find(obs => obs.observation_id === form.id) ? {
+                        petriCode: petriObservations.find(obs => obs.observation_id === form.id).petri_code,
+                        imageUrl: petriObservations.find(obs => obs.observation_id === form.id).image_url,
+                        plantType: petriObservations.find(obs => obs.observation_id === form.id).plant_type,
+                        fungicideUsed: petriObservations.find(obs => obs.observation_id === form.id).fungicide_used,
+                        surroundingWaterSchedule: petriObservations.find(obs => obs.observation_id === form.id).surrounding_water_schedule,
+                        notes: petriObservations.find(obs => obs.observation_id === form.id).notes || '',
+                        placement: petriObservations.find(obs => obs.observation_id === form.id).placement,
+                        placement_dynamics: petriObservations.find(obs => obs.observation_id === form.id).placement_dynamics,
+                        observationId: petriObservations.find(obs => obs.observation_id === form.id).observation_id,
+                        outdoor_temperature: petriObservations.find(obs => obs.observation_id === form.id).outdoor_temperature,
+                        outdoor_humidity: petriObservations.find(obs => obs.observation_id === form.id).outdoor_humidity
                       } : undefined}
                       disabled={isSessionReadOnly}
                       observationId={form.observationId}
@@ -1043,9 +998,7 @@ const SubmissionEditPage = () => {
                         tempImageKey: data.tempImageKey,
                         isValid: data.isValid,
                         isDirty: data.isDirty,
-                        hasImage: data.hasImage,
-                        outdoor_temperature: data.outdoor_temperature,
-                        outdoor_humidity: data.outdoor_humidity
+                        hasImage: data.hasImage
                       });
                     }}
                     onRemove={() => removeGasifierForm(form.id)}
@@ -1053,7 +1006,6 @@ const SubmissionEditPage = () => {
                     initialData={gasifierObservations.find(obs => obs.observation_id === form.id) ? {
                       gasifierCode: gasifierObservations.find(obs => obs.observation_id === form.id).gasifier_code,
                       imageUrl: gasifierObservations.find(obs => obs.observation_id === form.id).image_url,
-                      tempImageKey: form.tempImageKey, // Pass the tempImageKey from form state
                       chemicalType: gasifierObservations.find(obs => obs.observation_id === form.id).chemical_type,
                       measure: gasifierObservations.find(obs => obs.observation_id === form.id).measure,
                       anomaly: gasifierObservations.find(obs => obs.observation_id === form.id).anomaly,

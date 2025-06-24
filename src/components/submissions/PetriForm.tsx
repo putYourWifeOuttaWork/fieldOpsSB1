@@ -177,7 +177,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
                  hasImage;
   
   const toggleExpanded = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent bubbling to parent containers
+    e.stopPropagation();
     setIsExpanded(!isExpanded);
   };
 

@@ -145,7 +145,7 @@ const ImageUploadField = ({
           ...environmentalData
         });
         
-        // Show save prompt tooltip if onSaveTrigger is provided
+        // Show save prompt if onSaveTrigger is provided
         if (onSaveTrigger) {
           setShowSavePrompt(true);
         }
@@ -193,7 +193,7 @@ const ImageUploadField = ({
               file,
               tempImageKey,
               isDirty: false,
-              ...environmentalData // '...' i guess is a thing...
+              ...environmentalData
             });
 
             return () => {

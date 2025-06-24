@@ -1,4 +1,5 @@
 import { Submission, Site, PilotProgram, UserRole } from '../lib/types';
+import { PetriFormData, GasifierFormData } from '../utils/submissionUtils';
 
 // Session status enum matching the database enum
 export type SessionStatus = 'Opened' | 'Working' | 'Completed' | 'Cancelled' | 
@@ -21,6 +22,9 @@ export interface SubmissionSession {
   valid_petris_logged: number;
   valid_gasifiers_logged: number;
   escalated_to_user_ids?: string[];
+  // New fields to store observation data for caching
+  petriObservationsData?: PetriFormData[];
+  gasifierObservationsData?: GasifierFormData[];
 }
 
 // Active session with related data

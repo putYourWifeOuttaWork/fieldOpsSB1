@@ -61,6 +61,12 @@ const SubmissionEditPage = () => {
   } = usePilotProgramStore();
   const { setCurrentSessionId } = useSessionStore();
   
+  // Get passed state from location if available
+  const passedState = location.state as { 
+    petriObservations?: any[]; 
+    gasifierObservations?: any[] 
+  } | null;
+  
   // Add the useSubmissions hook to get access to updateSubmission function
   const { updateSubmission, loading: submissionLoading } = useSubmissions(siteId);
   
@@ -184,14 +190,12 @@ const SubmissionEditPage = () => {
       setLoading(true);
       
       try {
-        // Check if we have observations from location state (from NewSubmissionPage)
-        const locationPetriObservations = location.state?.petriObservations || [];
-        const locationGasifierObservations = location.state?.gasifierObservations || [];
-        
-        if (locationPetriObservations.length > 0 || locationGasifierObservations.length > 0) {
-          logger.debug('Found observations in location state:', {
-            petriCount: locationPetriObservations.length,
-            gasifierCount: locationGasifierObservations.length
+        // If we have observations from NewSubmissionPage via location state, use those
+        // This allows us to show the templated subforms immediately
+        if (passedState?.petriObservations || passedState?.gasifierObservations) {
+          logger.debug('Using observations from location state', {
+            petriCount: passedState.petriObservations?.length || 0,
+            gasifierCount: passedState.gasifierObservations?.length || 0
           });
         }
         
@@ -225,177 +229,117 @@ const SubmissionEditPage = () => {
         // Update title in browser
         document.title = `Submission #${submissionData.global_submission_id || ''} - GRMTek Sporeless`;
         
-        // Get petri observations
-        let petriData = [];
-        if (locationPetriObservations.length > 0) {
-          // Use observations from location state
-          petriData = locationPetriObservations;
-          logger.debug('Using petri observations from location state:', { count: petriData.length });
-        } else {
-          // Fetch from database
+        // Determine which observations to use
+        let petriData = passedState?.petriObservations || [];
+        let gasifierData = passedState?.gasifierObservations || [];
+        
+        // If we don't have observations from location state, fetch from the server
+        if (petriData.length === 0) {
           const { data, error } = await supabase
             .from('petri_observations')
             .select('*')
             .eq('submission_id', submissionId)
-            .order('order_index', { ascending: true });
+            .order('order_index', { ascending: true, nullsFirst: false });
             
           if (error) throw error;
           petriData = data || [];
         }
         
-        // Get gasifier observations
-        let gasifierData = [];
-        if (locationGasifierObservations.length > 0) {
-          // Use observations from location state
-          gasifierData = locationGasifierObservations;
-          logger.debug('Using gasifier observations from location state:', { count: gasifierData.length });
-        } else {
-          // Fetch from database
+        if (gasifierData.length === 0) {
           const { data, error } = await supabase
             .from('gasifier_observations')
             .select('*')
             .eq('submission_id', submissionId)
-            .order('order_index', { ascending: true });
+            .order('order_index', { ascending: true, nullsFirst: false });
             
           if (error) throw error;
           gasifierData = data || [];
         }
         
-        // Sort by order_index if available
-        petriData.sort((a, b) => {
-          if (a.order_index !== undefined && b.order_index !== undefined) {
-            return a.order_index - b.order_index;
-          }
-          return 0;
-        });
-        
-        gasifierData.sort((a, b) => {
-          if (a.order_index !== undefined && b.order_index !== undefined) {
-            return a.order_index - b.order_index;
-          }
-          return 0;
-        });
-        
         setPetriObservations(petriData);
         setGasifierObservations(gasifierData);
-        
-        // Fetch all temporary image keys for this session
-        let tempImageKeys: string[] = [];
-        try {
-          tempImageKeys = await offlineStorage.listTempImageKeys();
-          logger.debug(`Found ${tempImageKeys.length} temp image keys total`);
-        } catch (error) {
-          logger.error('Error fetching temp image keys:', error);
-        }
-        
-        // Get the session ID to use for filtering temp image keys
-        const sessionIdForFiltering = sessionData?.session_id || submissionId;
-        const sessionTempImageKeys = tempImageKeys.filter(key => key.startsWith(sessionIdForFiltering));
-        logger.debug(`Found ${sessionTempImageKeys.length} temp image keys for session ${sessionIdForFiltering}`);
         
         // Initialize petri form refs
         const petriFormRefs = petriData.map(obs => {
           const formRef = React.createRef<PetriFormRef>();
-          
-          // Find matching temp image key for this observation
-          const matchingKey = sessionTempImageKeys.find(key => 
-            key.includes(obs.observation_id)
-          );
-          
           return { 
-            id: obs.observation_id, 
+            id: obs.observationId || obs.observation_id, 
             ref: formRef, 
-            isValid: !!obs.image_url,
+            isValid: !!(obs.imageUrl || obs.image_url),
             isDirty: false,
-            observationId: obs.observation_id,
-            tempImageKey: matchingKey
+            observationId: obs.observationId || obs.observation_id
           };
         });
         setPetriForms(petriFormRefs);
-        setCompletedPetriCount(petriData?.filter(obs => !!obs.image_url).length || 0);
+        setCompletedPetriCount(petriData.filter(obs => !!(obs.imageUrl || obs.image_url)).length);
         
         // Initialize gasifier form refs
         const gasifierFormRefs = gasifierData.map(obs => {
           const formRef = React.createRef<GasifierFormRef>();
-          
-          // Find matching temp image key for this observation
-          const matchingKey = sessionTempImageKeys.find(key => 
-            key.includes(obs.observation_id)
-          );
-          
           return { 
-            id: obs.observation_id, 
+            id: obs.observationId || obs.observation_id, 
             ref: formRef, 
-            isValid: !!obs.image_url,
+            isValid: !!(obs.imageUrl || obs.image_url),
             isDirty: false,
-            observationId: obs.observation_id,
-            tempImageKey: matchingKey
+            observationId: obs.observationId || obs.observation_id
           };
         });
         setGasifierForms(gasifierFormRefs);
-        setCompletedGasifierCount(gasifierData?.filter(obs => !!obs.image_url).length || 0);
+        setCompletedGasifierCount(gasifierData.filter(obs => !!(obs.imageUrl || obs.image_url)).length);
         
         // Initialize petriObservationData state
         const initialPetriData: {[key: string]: any} = {};
-        petriData?.forEach(observation => {
-          // Find matching temp image key for this observation
-          const matchingKey = sessionTempImageKeys.find(key => 
-            key.includes(observation.observation_id)
-          );
+        petriData.forEach(observation => {
+          const obsId = observation.observationId || observation.observation_id;
           
-          initialPetriData[observation.observation_id] = {
-            formId: observation.observation_id,
-            petriCode: observation.petri_code,
+          initialPetriData[obsId] = {
+            formId: obsId,
+            petriCode: observation.petriCode || observation.petri_code,
             imageFile: null,
-            imageUrl: observation.image_url,
-            tempImageKey: matchingKey,
-            plantType: observation.plant_type,
-            fungicideUsed: observation.fungicide_used,
-            surroundingWaterSchedule: observation.surrounding_water_schedule,
+            imageUrl: observation.imageUrl || observation.image_url,
+            plantType: observation.plantType || observation.plant_type,
+            fungicideUsed: observation.fungicideUsed || observation.fungicide_used,
+            surroundingWaterSchedule: observation.surroundingWaterSchedule || observation.surrounding_water_schedule,
             notes: observation.notes || '',
             placement: observation.placement,
             placement_dynamics: observation.placement_dynamics,
-            observationId: observation.observation_id,
-            isValid: !!observation.image_url,
+            observationId: obsId,
+            orderIndex: observation.orderIndex || observation.order_index,
+            isValid: !!(observation.imageUrl || observation.image_url),
             hasData: true,
-            hasImage: !!observation.image_url || !!matchingKey,
+            hasImage: !!(observation.imageUrl || observation.image_url),
             isDirty: false,
             outdoor_temperature: observation.outdoor_temperature,
-            outdoor_humidity: observation.outdoor_humidity,
-            orderIndex: observation.order_index
+            outdoor_humidity: observation.outdoor_humidity
           };
         });
         setPetriObservationData(initialPetriData);
         
         // Initialize gasifierObservationData state
         const initialGasifierData: {[key: string]: any} = {};
-        gasifierData?.forEach(observation => {
-          // Find matching temp image key for this observation
-          const matchingKey = sessionTempImageKeys.find(key => 
-            key.includes(observation.observation_id)
-          );
+        gasifierData.forEach(observation => {
+          const obsId = observation.observationId || observation.observation_id;
           
-          initialGasifierData[observation.observation_id] = {
-            formId: observation.observation_id,
-            gasifierCode: observation.gasifier_code,
+          initialGasifierData[obsId] = {
+            formId: obsId,
+            gasifierCode: observation.gasifierCode || observation.gasifier_code,
             imageFile: null,
-            imageUrl: observation.image_url,
-            tempImageKey: matchingKey,
-            chemicalType: observation.chemical_type,
+            imageUrl: observation.imageUrl || observation.image_url,
+            chemicalType: observation.chemicalType || observation.chemical_type,
             measure: observation.measure,
             anomaly: observation.anomaly,
-            placementHeight: observation.placement_height,
-            directionalPlacement: observation.directional_placement,
-            placementStrategy: observation.placement_strategy,
+            placementHeight: observation.placementHeight || observation.placement_height,
+            directionalPlacement: observation.directionalPlacement || observation.directional_placement,
+            placementStrategy: observation.placementStrategy || observation.placement_strategy,
             notes: observation.notes || '',
-            observationId: observation.observation_id,
-            isValid: !!observation.image_url,
+            observationId: obsId,
+            orderIndex: observation.orderIndex || observation.order_index,
+            isValid: !!(observation.imageUrl || observation.image_url),
             hasData: true,
-            hasImage: !!observation.image_url || !!matchingKey,
+            hasImage: !!(observation.imageUrl || observation.image_url),
             isDirty: false,
             outdoor_temperature: observation.outdoor_temperature,
-            outdoor_humidity: observation.outdoor_humidity,
-            orderIndex: observation.order_index
+            outdoor_humidity: observation.outdoor_humidity
           };
         });
         setGasifierObservationData(initialGasifierData);
@@ -446,7 +390,7 @@ const SubmissionEditPage = () => {
     };
 
     loadSubmissionData();
-  }, [programId, siteId, submissionId, selectedSite, navigate, setCurrentSessionId, location.state]);
+  }, [programId, siteId, submissionId, selectedSite, navigate, setCurrentSessionId, passedState]);
   
   // Add a petri form
   const addPetriForm = () => {
@@ -507,7 +451,6 @@ const SubmissionEditPage = () => {
           petriCode: data.petriCode,
           imageFile: data.imageFile,
           imageUrl: data.imageUrl,
-          tempImageKey: data.tempImageKey,
           plantType: data.plantType || 'Other Fresh Perishable',
           fungicideUsed: data.fungicideUsed,
           surroundingWaterSchedule: data.surroundingWaterSchedule,
@@ -519,7 +462,8 @@ const SubmissionEditPage = () => {
           outdoor_temperature: data.outdoor_temperature,
           outdoor_humidity: data.outdoor_humidity,
           formId: data.formId,
-          orderIndex: data.orderIndex
+          tempImageKey: data.tempImageKey,
+          orderIndex: data.orderIndex // Include orderIndex in the data
         }));
       
       // Get data from gasifier forms
@@ -529,7 +473,6 @@ const SubmissionEditPage = () => {
           gasifierCode: data.gasifierCode,
           imageFile: data.imageFile,
           imageUrl: data.imageUrl,
-          tempImageKey: data.tempImageKey,
           chemicalType: data.chemicalType,
           measure: data.measure,
           anomaly: data.anomaly,
@@ -542,7 +485,8 @@ const SubmissionEditPage = () => {
           outdoor_temperature: data.outdoor_temperature,
           outdoor_humidity: data.outdoor_humidity,
           formId: data.formId,
-          orderIndex: data.orderIndex
+          tempImageKey: data.tempImageKey,
+          orderIndex: data.orderIndex // Include orderIndex in the data
         }));
       
       // If online, update the submission using the hook function
@@ -975,7 +919,9 @@ const SubmissionEditPage = () => {
             <CardContent>
               <div className="space-y-4">
                 {petriForms.map((form, index) => {
-                  const observation = petriObservations.find(obs => obs.observation_id === form.id);
+                  const observation = petriObservations.find(obs => 
+                    obs.observationId === form.id || obs.observation_id === form.id
+                  );
                   
                   return (
                     <PetriForm
@@ -1018,25 +964,25 @@ const SubmissionEditPage = () => {
                       onRemove={() => removePetriForm(form.id)}
                       showRemoveButton={petriForms.length > 1}
                       initialData={observation ? {
-                        petriCode: observation.petri_code,
-                        imageUrl: observation.image_url,
-                        tempImageKey: form.tempImageKey, // Pass the tempImageKey from form state
-                        plantType: observation.plant_type,
-                        fungicideUsed: observation.fungicide_used,
-                        surroundingWaterSchedule: observation.surrounding_water_schedule,
+                        petriCode: observation.petriCode || observation.petri_code,
+                        imageUrl: observation.imageUrl || observation.image_url,
+                        tempImageKey: form.tempImageKey,
+                        plantType: observation.plantType || observation.plant_type,
+                        fungicideUsed: observation.fungicideUsed || observation.fungicide_used,
+                        surroundingWaterSchedule: observation.surroundingWaterSchedule || observation.surrounding_water_schedule,
                         notes: observation.notes || '',
                         placement: observation.placement,
                         placement_dynamics: observation.placement_dynamics,
-                        observationId: observation.observation_id,
+                        observationId: observation.observationId || observation.observation_id,
+                        order_index: observation.orderIndex || observation.order_index,
                         outdoor_temperature: observation.outdoor_temperature,
-                        outdoor_humidity: observation.outdoor_humidity,
-                        order_index: observation.order_index
+                        outdoor_humidity: observation.outdoor_humidity
                       } : undefined}
                       disabled={isSessionReadOnly}
                       observationId={form.observationId}
                       submissionOutdoorTemperature={submission.temperature}
                       submissionOutdoorHumidity={submission.humidity}
-                      orderIndex={observation?.order_index !== undefined ? observation.order_index : index}
+                      orderIndex={observation?.orderIndex || observation?.order_index}
                     />
                   );
                 })}
@@ -1071,7 +1017,9 @@ const SubmissionEditPage = () => {
             <CardContent>
               <div className="space-y-4">
                 {gasifierForms.map((form, index) => {
-                  const observation = gasifierObservations.find(obs => obs.observation_id === form.id);
+                  const observation = gasifierObservations.find(obs => 
+                    obs.observationId === form.id || obs.observation_id === form.id
+                  );
                   
                   return (
                     <GasifierForm
@@ -1114,26 +1062,26 @@ const SubmissionEditPage = () => {
                       onRemove={() => removeGasifierForm(form.id)}
                       showRemoveButton={gasifierForms.length > 1}
                       initialData={observation ? {
-                        gasifierCode: observation.gasifier_code,
-                        imageUrl: observation.image_url,
-                        tempImageKey: form.tempImageKey, // Pass the tempImageKey from form state
-                        chemicalType: observation.chemical_type,
+                        gasifierCode: observation.gasifierCode || observation.gasifier_code,
+                        imageUrl: observation.imageUrl || observation.image_url,
+                        tempImageKey: form.tempImageKey,
+                        chemicalType: observation.chemicalType || observation.chemical_type,
                         measure: observation.measure,
                         anomaly: observation.anomaly,
-                        placementHeight: observation.placement_height,
-                        directionalPlacement: observation.directional_placement,
-                        placementStrategy: observation.placement_strategy,
+                        placementHeight: observation.placementHeight || observation.placement_height,
+                        directionalPlacement: observation.directionalPlacement || observation.directional_placement,
+                        placementStrategy: observation.placementStrategy || observation.placement_strategy,
                         notes: observation.notes || '',
-                        observationId: observation.observation_id,
+                        observationId: observation.observationId || observation.observation_id,
+                        order_index: observation.orderIndex || observation.order_index,
                         outdoor_temperature: observation.outdoor_temperature,
-                        outdoor_humidity: observation.outdoor_humidity,
-                        order_index: observation.order_index
+                        outdoor_humidity: observation.outdoor_humidity
                       } : undefined}
                       disabled={isSessionReadOnly}
                       observationId={form.observationId}
                       submissionOutdoorTemperature={submission.temperature}
                       submissionOutdoorHumidity={submission.humidity}
-                      orderIndex={observation?.order_index !== undefined ? observation.order_index : index}
+                      orderIndex={observation?.orderIndex || observation?.order_index}
                     />
                   );
                 })}

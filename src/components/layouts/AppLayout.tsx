@@ -300,7 +300,7 @@ const AppLayout = () => {
       {/* Footer */}
       <footer className="bg-gray-100 border-t border-gray-200 py-3 sm:py-4 mt-auto" data-testid="app-footer">
         <div className="container mx-auto px-4 text-center text-xs sm:text-sm text-gray-600">
-          <p>© {new Date().getFullYear()} GRMTek Sporeless Pilot Program. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} GRM TEK - GasX InVivo Pilot Program Platform - Version 1.120. All rights reserved.</p>
         </div>
       </footer>
       

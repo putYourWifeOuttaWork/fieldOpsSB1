@@ -31,7 +31,7 @@ let dbPromise: Promise<IDBPDatabase<GRMTekDB>>;
 
 const initDB = async () => {
   if (!dbPromise) {
-    dbPromise = openDB<GRMTekDB>('grmtek-offline-storage', 3, {
+    dbPromise = openDB<GRMTekDB>('grmtek-offline-storage', 4, {
       upgrade(db, oldVersion, newVersion) {
         // Create submissions store if it doesn't exist
         if (oldVersion < 1) {

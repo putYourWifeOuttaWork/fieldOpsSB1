@@ -200,7 +200,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
                   hasImage;
   
   const toggleExpanded = (e: React.MouseEvent) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Prevent bubbling to parent containers
     setIsExpanded(!isExpanded);
   };
   
@@ -277,11 +277,19 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
         hasImageFile: !!imageFile,
         hasInitialImageUrl: !!(initialData?.observationId && initialData?.imageUrl),
         hasTempImageKey: !!tempImageKey,
+        tempImageKey,
+        imageFile: imageFile ? {
+          name: imageFile.name,
+          size: imageFile.size,
+          type: imageFile.type
+        } : null,
         isValid,
         hasData,
         hasImage,
         observationId: observationId || initialData?.observationId,
-        isDirty
+        isDirty,
+        outdoor_temperature: formik.values.outdoor_temperature,
+        outdoor_humidity: formik.values.outdoor_humidity
       });
 
       onUpdate(formId, {
@@ -317,10 +325,13 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
     formik.values.outdoor_temperature,
     formik.values.outdoor_humidity,
     imageFile,
+    imageUrl,
+    tempImageKey,
     isValid,
     hasData,
     hasImage,
-    initialData,
+    initialData?.observationId,
+    initialData?.imageUrl,
     observationId,
     isDirty,
     onUpdate,

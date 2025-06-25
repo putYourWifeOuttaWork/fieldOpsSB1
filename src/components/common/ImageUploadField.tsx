@@ -183,7 +183,7 @@ const ImageUploadField = ({
               file,
               tempImageKey,
               isDirty: false,
-              ...environmentalData
+              ...environmentalData // '...' i guess is a thing...
             });
 
             return () => {
@@ -297,8 +297,8 @@ const ImageUploadField = ({
             ) : (
               <>
                 <Upload className="w-6 h-6 text-gray-400" />
-                <p className="text-xs text-gray-500 mt-1 text-center">
-                  Click to Take A Photo (No Need For Uploads)
+                <p className="text-xs text-gray-500 mt-1">
+                  <center>Click to Take A Photo (No Need For Uploads)</center>
                 </p>
               </>
             )}
@@ -330,7 +330,7 @@ const ImageUploadField = ({
       {(imageTouched && !imageFile && !imagePreview && !tempImageKey) || uploadError ? (
         <p className="mt-1 text-sm text-error-600">{uploadError || 'Take A Photo, Do Not Upload'}</p>
       ) : (
-       <p className="text-xs text-gray-500 mt-1 text-center">Click - Take A Photo - Done</p>
+       <center><p className="text-xs text-gray-500 mt-1">Click - Take A Photo - Done</p></center>
       )}
     </div>
   );

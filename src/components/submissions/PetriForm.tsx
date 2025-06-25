@@ -252,12 +252,6 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
         hasImageFile: !!imageFile,
         hasInitialImageUrl: !!(initialData?.observationId && initialData?.imageUrl),
         hasTempImageKey: !!tempImageKey,
-        tempImageKey,
-        imageFile: imageFile ? {
-          name: imageFile.name,
-          size: imageFile.size,
-          type: imageFile.type
-        } : null,
         isValid,
         hasData,
         hasImage,
@@ -297,11 +291,11 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
     isValid,
     hasData,
     hasImage,
+    initialData,
+    observationId,
     isDirty,
     onUpdate,
-    formId,
-    initialData,
-    observationId
+    formId
   ]);
 
   return (

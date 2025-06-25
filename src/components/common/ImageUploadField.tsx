@@ -139,6 +139,7 @@ const ImageUploadField = ({
           isDirty: true,
           ...environmentalData
         });
+        
       } catch (error) {
         logger.error('Error storing image:', error);
         setUploadError('Failed to store image for offline use');

@@ -4,7 +4,6 @@ import { format, formatDistanceToNow, differenceInSeconds, set } from 'date-fns'
 import Card, { CardHeader, CardContent } from '../common/Card';
 import { SubmissionSession } from '../../types/session';
 import SessionProgressStages from './SessionProgressStages';
-import { supabase } from '../../lib/supabaseClient';
 import Button from '../common/Button';
 
 interface SubmissionOverviewCardProps {
@@ -19,6 +18,8 @@ interface SubmissionOverviewCardProps {
   petrisTotal?: number;
   gasifiersComplete?: number;
   gasifiersTotal?: number;
+  // Shared users details prop
+  sharedUsersDetails?: Map<string, { full_name: string | null; email: string }>;
 }
 
 const SubmissionOverviewCard: React.FC<SubmissionOverviewCardProps> = ({
@@ -31,43 +32,63 @@ const SubmissionOverviewCard: React.FC<SubmissionOverviewCardProps> = ({
   petrisComplete = 0,
   petrisTotal = 0,
   gasifiersComplete = 0,
-  gasifiersTotal = 0
+  gasifiersTotal = 0,
+  sharedUsersDetails = new Map()
 }) => {
   const [timeRemaining, setTimeRemaining] = useState<number>(0);
   const [timeRemainingString, setTimeRemainingString] = useState<string>("");
-  const [sharedUsersDetails, setSharedUsersDetails] = useState<Map<string, { full_name: string | null; email: string }>>(new Map());
   const [formattedSharedUsers, setFormattedSharedUsers] = useState<string>("");
   
-  // Fetch shared users' details when session changes
+  // Calculate time until expiration (11:59:59 PM of the session start day)
   useEffect(() => {
-    const fetchSharedUserDetails = async () => {
-      if (!session?.escalated_to_user_ids || session.escalated_to_user_ids.length === 0) return;
+    // Calculate expiration time (11:59:59 PM of the day the session started)
+    const sessionStartTime = new Date(session?.session_start_time || submissionCreatedAt || new Date());
+    const expirationTime = set(sessionStartTime, { hours: 23, minutes: 59, seconds: 59 });
+    const now = new Date();
+    
+    // If already expired, don't set up timer
+    if (now > expirationTime || 
+        (session && ['Completed', 'Cancelled', 'Expired', 'Expired-Complete', 'Expired-Incomplete'].includes(session.session_status))) {
+      setTimeRemaining(0);
+      setTimeRemainingString("Expired");
+      return;
+    }
+    
+    // Format time remaining as HH:MM:SS
+    const formatTimeRemaining = (seconds: number) => {
+      if (seconds <= 0) return "00:00:00";
       
-      try {
-        const { data, error } = await supabase
-          .from('users')
-          .select('id, full_name, email')
-          .in('id', session.escalated_to_user_ids);
-          
-        if (error) throw error;
-        
-        if (data) {
-          // Create a map for quick lookup
-          const userDetailsMap = new Map<string, { full_name: string | null; email: string }>();
-          data.forEach(user => {
-            userDetailsMap.set(user.id, { full_name: user.full_name, email: user.email });
-          });
-          setSharedUsersDetails(userDetailsMap);
-        }
-      } catch (error) {
-        console.error('Error fetching shared user details:', error);
-      }
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
+      
+      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     };
     
-    fetchSharedUserDetails();
-  }, [session?.escalated_to_user_ids]);
+    // Initial calculation
+    const initialRemaining = differenceInSeconds(expirationTime, now);
+    setTimeRemaining(initialRemaining);
+    setTimeRemainingString(formatTimeRemaining(initialRemaining));
+    
+    // Update every second
+    const interval = setInterval(() => {
+      const now = new Date();
+      if (now > expirationTime) {
+        clearInterval(interval);
+        setTimeRemaining(0);
+        setTimeRemainingString("Expired");
+        return;
+      }
+      
+      const seconds = differenceInSeconds(expirationTime, now);
+      setTimeRemaining(seconds);
+      setTimeRemainingString(formatTimeRemaining(seconds));
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [session?.session_start_time, session?.session_status, submissionCreatedAt]);
   
-  // Format shared users into a readable string
+  // Process shared users when they change
   useEffect(() => {
     if (!session?.escalated_to_user_ids || session.escalated_to_user_ids.length === 0) {
       setFormattedSharedUsers("");
@@ -119,50 +140,6 @@ const SubmissionOverviewCard: React.FC<SubmissionOverviewCardProps> = ({
   const expirationTime = calculateExpirationTime();
   const now = new Date();
   const isExpired = now > expirationTime;
-  
-  // Calculate and update time remaining
-  useEffect(() => {
-    if (isExpired || 
-        !session || 
-        ['Completed', 'Cancelled', 'Expired', 'Expired-Complete', 'Expired-Incomplete'].includes(session.session_status)) {
-      setTimeRemaining(0);
-      setTimeRemainingString("Expired");
-      return;
-    }
-    
-    // Format time remaining as HH:MM:SS
-    const formatTimeRemaining = (seconds: number) => {
-      if (seconds <= 0) return "00:00:00";
-      
-      const hours = Math.floor(seconds / 3600);
-      const minutes = Math.floor((seconds % 3600) / 60);
-      const secs = seconds % 60;
-      
-      return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    };
-    
-    // Initial calculation
-    const initialRemaining = differenceInSeconds(expirationTime, now);
-    setTimeRemaining(initialRemaining);
-    setTimeRemainingString(formatTimeRemaining(initialRemaining));
-    
-    // Update every second
-    const interval = setInterval(() => {
-      const now = new Date();
-      if (now > expirationTime) {
-        clearInterval(interval);
-        setTimeRemaining(0);
-        setTimeRemainingString("Expired");
-        return;
-      }
-      
-      const seconds = differenceInSeconds(expirationTime, now);
-      setTimeRemaining(seconds);
-      setTimeRemainingString(formatTimeRemaining(seconds));
-    }, 1000);
-    
-    return () => clearInterval(interval);
-  }, [session, expirationTime, isExpired]);
   
   // Get status color for badges
   const getStatusColor = (status: string) => {

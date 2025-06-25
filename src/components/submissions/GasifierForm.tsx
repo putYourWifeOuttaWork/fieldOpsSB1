@@ -287,9 +287,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
         hasData,
         hasImage,
         observationId: observationId || initialData?.observationId,
-        isDirty,
-        outdoor_temperature: formik.values.outdoor_temperature,
-        outdoor_humidity: formik.values.outdoor_humidity
+        isDirty
       });
 
       onUpdate(formId, {
@@ -325,8 +323,6 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
     formik.values.outdoor_temperature,
     formik.values.outdoor_humidity,
     imageFile,
-    imageUrl,
-    tempImageKey,
     isValid,
     hasData,
     hasImage,

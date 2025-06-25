@@ -262,9 +262,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
         hasData,
         hasImage,
         observationId: observationId || initialData?.observationId,
-        isDirty,
-        outdoor_temperature: formik.values.outdoor_temperature,
-        outdoor_humidity: formik.values.outdoor_humidity
+        isDirty
       });
       
       onUpdate(formId, {
@@ -296,19 +294,14 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
     formik.values.outdoor_temperature,
     formik.values.outdoor_humidity,
     imageFile,
-    imageUrl,
-    tempImageKey,
     isValid,
     hasData,
     hasImage,
-    initialData?.observationId,
-    initialData?.imageUrl,
-    initialData?.placement_dynamics,
-    initialData?.plantType,
-    observationId,
     isDirty,
     onUpdate,
-    formId
+    formId,
+    initialData,
+    observationId
   ]);
 
   return (

@@ -112,7 +112,7 @@ const AppLayout = () => {
               
               <Link to="/home" className="flex items-center" data-testid="app-logo-link">
                 <Leaf className="h-5 w-5 sm:h-6 sm:w-6 mr-1 sm:mr-2" />
-                <h1 className="text-lg sm:text-xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">GRMTek Sporeless</h1>
+                <h1 className="text-lg sm:text-xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">GasX InVivo</h1>
               </Link>
             </div>
 

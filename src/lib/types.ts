@@ -43,10 +43,12 @@ export type Submission = Database['public']['Tables']['submissions']['Row'] & {
 export type PetriObservation = Database['public']['Tables']['petri_observations']['Row'] & {
   outdoor_temperature?: number;
   outdoor_humidity?: number;
+  order_index?: number; // Add order_index field
 };
 export type GasifierObservation = Database['public']['Tables']['gasifier_observations']['Row'] & {
   outdoor_temperature?: number;
   outdoor_humidity?: number;
+  order_index?: number; // Add order_index field
 };
 export type UserRole = 'Admin' | 'Edit' | 'Respond' | 'ReadOnly';
 export type HistoryEventType = Database['public']['Tables']['pilot_program_history']['Row']['update_type'];

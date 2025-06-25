@@ -35,6 +35,7 @@ interface GasifierFormProps {
     hasImage: boolean;
     observationId?: string;
     isDirty: boolean;
+    orderIndex?: number; // Add orderIndex to onUpdate data
   }) => void;
   onRemove: () => void;
   showRemoveButton: boolean;
@@ -52,11 +53,13 @@ interface GasifierFormProps {
     outdoor_temperature?: number;
     outdoor_humidity?: number;
     observationId?: string;
+    order_index?: number; // Add order_index to initial data
   };
   disabled?: boolean;
   observationId?: string;
   submissionOutdoorTemperature?: number;
   submissionOutdoorHumidity?: number;
+  orderIndex?: number; // Add orderIndex prop
 }
 
 export interface GasifierFormRef {
@@ -135,7 +138,8 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
   disabled = false,
   observationId,
   submissionOutdoorTemperature,
-  submissionOutdoorHumidity
+  submissionOutdoorHumidity,
+  orderIndex
 }, ref) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [tempImageKey, setTempImageKey] = useState<string | undefined>(initialData?.tempImageKey);
@@ -289,7 +293,8 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
         observationId: observationId || initialData?.observationId,
         isDirty,
         outdoor_temperature: formik.values.outdoor_temperature,
-        outdoor_humidity: formik.values.outdoor_humidity
+        outdoor_humidity: formik.values.outdoor_humidity,
+        orderIndex: orderIndex !== undefined ? orderIndex : initialData?.order_index
       });
 
       onUpdate(formId, {
@@ -310,7 +315,8 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
         hasData,
         hasImage,
         observationId: observationId || initialData?.observationId,
-        isDirty
+        isDirty,
+        orderIndex: orderIndex !== undefined ? orderIndex : initialData?.order_index // Pass orderIndex to parent
       });
     }
   }, [
@@ -332,10 +338,12 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
     hasImage,
     initialData?.observationId,
     initialData?.imageUrl,
+    initialData?.order_index,
     observationId,
     isDirty,
     onUpdate,
-    formId
+    formId,
+    orderIndex
   ]);
 
   return (
@@ -590,6 +598,13 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
         type="hidden"
         name="outdoor_humidity"
         value={formik.values.outdoor_humidity || ''}
+      />
+      
+      {/* Hidden field for order index */}
+      <input 
+        type="hidden"
+        name="orderIndex"
+        value={orderIndex !== undefined ? orderIndex : initialData?.order_index || ''}
       />
     </div>
   );

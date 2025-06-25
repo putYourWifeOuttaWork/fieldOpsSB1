@@ -25,8 +25,8 @@ interface PetriFormProps {
     fungicideUsed: 'Yes' | 'No';
     surroundingWaterSchedule: string;
     notes: string;
-    placement?: PetriPlacement | null;
-    placement_dynamics?: PetriPlacementDynamics | null;
+    placement?: string | null;
+    placement_dynamics?: string | null;
     outdoor_temperature?: number;
     outdoor_humidity?: number;
     isValid: boolean;
@@ -34,6 +34,7 @@ interface PetriFormProps {
     hasImage: boolean;
     observationId?: string;
     isDirty: boolean;
+    orderIndex?: number; // Add orderIndex to onUpdate data
   }) => void;
   onRemove: () => void;
   showRemoveButton: boolean;
@@ -50,11 +51,13 @@ interface PetriFormProps {
     outdoor_temperature?: number;
     outdoor_humidity?: number;
     observationId?: string;
+    order_index?: number; // Add order_index to initial data
   };
   disabled?: boolean;
   observationId?: string;
   submissionOutdoorTemperature?: number;
   submissionOutdoorHumidity?: number;
+  orderIndex?: number; // Add orderIndex prop
 }
 
 export interface PetriFormRef {
@@ -112,7 +115,8 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
   disabled = false,
   observationId,
   submissionOutdoorTemperature,
-  submissionOutdoorHumidity
+  submissionOutdoorHumidity,
+  orderIndex
 }, ref) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [tempImageKey, setTempImageKey] = useState<string | undefined>(initialData?.tempImageKey);
@@ -264,7 +268,8 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
         observationId: observationId || initialData?.observationId,
         isDirty,
         outdoor_temperature: formik.values.outdoor_temperature,
-        outdoor_humidity: formik.values.outdoor_humidity
+        outdoor_humidity: formik.values.outdoor_humidity,
+        orderIndex: orderIndex !== undefined ? orderIndex : initialData?.order_index
       });
       
       onUpdate(formId, {
@@ -284,7 +289,8 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
         hasData,
         hasImage,
         observationId: observationId || initialData?.observationId,
-        isDirty
+        isDirty,
+        orderIndex: orderIndex !== undefined ? orderIndex : initialData?.order_index // Pass orderIndex to parent
       });
     }
   }, [
@@ -305,10 +311,12 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
     initialData?.imageUrl,
     initialData?.placement_dynamics,
     initialData?.plantType,
+    initialData?.order_index,
     observationId,
     isDirty,
     onUpdate,
-    formId
+    formId,
+    orderIndex
   ]);
 
   return (
@@ -524,6 +532,13 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
         type="hidden"
         name="outdoor_humidity"
         value={formik.values.outdoor_humidity || ''}
+      />
+      
+      {/* Hidden field for order index */}
+      <input 
+        type="hidden"
+        name="orderIndex"
+        value={orderIndex !== undefined ? orderIndex : initialData?.order_index || ''}
       />
     </div>
   );

@@ -57,7 +57,7 @@ const LoginPage = () => {
 
         if (data.user) {
           toast.success('Login successful!');
-          navigate('/home');
+          navigate('/home'); // Changed from '/programs' to '/home'
         }
       } catch (error) {
         setErrorMessage('An unexpected error occurred');

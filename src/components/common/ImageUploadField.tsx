@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Upload, Check, AlertCircle, XCircle } from 'lucide-react';
 import offlineStorage from '../../utils/offlineStorage';
 import useWeather from '../../hooks/useWeather';
@@ -40,12 +40,13 @@ const ImageUploadField = ({
   className = ''
 }: ImageUploadFieldProps) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(initialImageUrl || null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageTouched, setImageTouched] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [tempImageKey, setTempImageKey] = useState<string | undefined>(initialTempImageKey);
   const [showClearButton, setShowClearButton] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
   
   // Weather hook for environmental data capture
   const { currentConditions } = useWeather();
@@ -61,6 +62,9 @@ const ImageUploadField = ({
       submissionSessionId,
       hasImage
     });
+    
+    // Initialize image loaded state to false
+    setImageLoaded(false);
   }, [imageId, initialImageUrl, initialTempImageKey, submissionSessionId, hasImage]);
 
   const validateImageFile = (file: File) => {
@@ -94,11 +98,18 @@ const ImageUploadField = ({
       try {
         setImageFile(file);
         
+        // Clear previous image preview if it exists
+        if (imagePreview) {
+          URL.revokeObjectURL(imagePreview);
+        }
+        
+        // Generate a new temp key for this image
         const newTempKey = `${submissionSessionId}-${imageId}-${Date.now()}`;
         
+        // Store the image in IndexedDB
         const fileBlob = new Blob([await file.arrayBuffer()], { type: file.type });
-        
         await offlineStorage.saveTempImage(newTempKey, fileBlob);
+        
         logger.debug(`Image saved with key: ${newTempKey}`, {
           fileSize: file.size,
           fileType: file.type,
@@ -106,17 +117,21 @@ const ImageUploadField = ({
           submissionSessionId
         });
         
+        // Update tempImageKey state
         setTempImageKey(newTempKey);
         
+        // Create and set image preview
         const reader = new FileReader();
         reader.onload = () => {
           setImagePreview(reader.result as string);
+          setImageLoaded(true);
         };
         reader.onerror = () => {
           setUploadError('Failed to read image file');
           setImageFile(null);
           setImagePreview(null);
           setTempImageKey(undefined);
+          setImageLoaded(false);
         };
         reader.readAsDataURL(file);
 
@@ -136,6 +151,7 @@ const ImageUploadField = ({
         onChange({ 
           file, 
           tempImageKey: newTempKey,
+          imageUrl: undefined, // Clear imageUrl since we have a new file
           isDirty: true,
           ...environmentalData
         });
@@ -145,61 +161,100 @@ const ImageUploadField = ({
         setUploadError('Failed to store image for offline use');
         setImageFile(null);
         setTempImageKey(undefined);
+        setImagePreview(null);
+        setImageLoaded(false);
       }
     }
 
+    // Reset the file input so the same file can be selected again if needed
     e.target.value = '';
   };
   
-  // Load temp image if available
+  // Load initial image - prioritizes initialImageUrl over initialTempImageKey
   useEffect(() => {
-    const loadTempImage = async () => {
-      if (tempImageKey && !imageFile && !imagePreview) {
+    // Only run this effect once per unique initialImageUrl/initialTempImageKey combination
+    if (imageLoaded) return;
+
+    const loadInitialImage = async () => {
+      // Clear any existing preview
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+        setImagePreview(null);
+      }
+
+      // First priority: initialImageUrl (from database)
+      if (initialImageUrl) {
+        logger.debug(`Using initialImageUrl for ${imageId}`);
+        setImagePreview(initialImageUrl);
+        setImageLoaded(true);
+        
+        // No need to set imageFile here as it's already in the database
+        // Notify parent component that we're using the database URL
+        onChange({
+          file: null,
+          imageUrl: initialImageUrl,
+          isDirty: false,
+        });
+        return;
+      }
+
+      // Second priority: initialTempImageKey (from IndexedDB)
+      if (initialTempImageKey) {
         try {
-          logger.debug(`Loading temp image with key: ${tempImageKey}`);
-          const blob = await offlineStorage.getTempImage(tempImageKey);
+          logger.debug(`Loading image from temp key: ${initialTempImageKey}`);
+          const blob = await offlineStorage.getTempImage(initialTempImageKey);
           
           if (blob) {
             const file = new File([blob], `image-${imageId}.jpg`, { type: blob.type });
             setImageFile(file);
             
-            const environmentalData = {
-            outdoor_temperature: currentConditions?.temp,
-            outdoor_humidity: currentConditions?.RelativeHumidity || currentConditions?.humidity
-            };
-
             const url = URL.createObjectURL(blob);
             setImagePreview(url);
+            setTempImageKey(initialTempImageKey);
+            setImageLoaded(true);
             
-            logger.debug(`Successfully loaded temp image for key: ${tempImageKey}`, {
+            logger.debug(`Successfully loaded temp image for key: ${initialTempImageKey}`, {
               blobSize: blob.size,
               blobType: blob.type,
               fileCreated: !!file,
               fileSize: file.size
             });
+            
+            // Get environmental data
+            const environmentalData = {
+              outdoor_temperature: currentConditions?.temp,
+              outdoor_humidity: currentConditions?.RelativeHumidity || currentConditions?.humidity
+            };
 
-            // Ensure onChange is called so parent components know we have a valid image
+            // Notify parent component
             onChange({
               file,
-              tempImageKey,
+              tempImageKey: initialTempImageKey,
               isDirty: false,
-              ...environmentalData // '...' i guess is a thing...
+              ...environmentalData
             });
-
-            return () => {
-              URL.revokeObjectURL(url);
-            };
+            
+            return;
           } else {
-            logger.debug(`No temp image found for key: ${tempImageKey}`);
+            logger.debug(`No temp image found for key: ${initialTempImageKey}`);
           }
         } catch (error) {
-          logger.error(`Error loading temp image for key ${tempImageKey}:`, error);
+          logger.error(`Error loading temp image for key ${initialTempImageKey}:`, error);
         }
       }
+
+      setImageLoaded(true); // Mark as loaded even if we couldn't load an image
     };
     
-    loadTempImage();
-  }, [tempImageKey, imageFile, imagePreview, imageId, onChange, currentConditions]);
+    loadInitialImage();
+    
+    // Cleanup function to revoke object URLs
+    return () => {
+      if (imagePreview && !initialImageUrl) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [initialImageUrl, initialTempImageKey, imageId, onChange, currentConditions, imageLoaded, imagePreview]);
 
   const triggerFileInput = () => {
     if (disabled) return;
@@ -210,11 +265,17 @@ const ImageUploadField = ({
   const handleClearImage = (e: React.MouseEvent) => {
     if (disabled) return;
     e.stopPropagation();
+    
+    // Clear preview and file state
+    if (imagePreview && !initialImageUrl) {
+      URL.revokeObjectURL(imagePreview);
+    }
+    
     setImageFile(null);
     setImagePreview(null);
-    setTempImageKey(undefined);
     setImageTouched(true);
     
+    // Delete temp image if one exists
     if (tempImageKey) {
       try {
         logger.debug(`Deleting temp image with key: ${tempImageKey}`);
@@ -223,6 +284,9 @@ const ImageUploadField = ({
         logger.error('Error deleting temp image:', error);
       }
     }
+    
+    // Reset temp image key
+    setTempImageKey(undefined);
     
     logger.debug('Image cleared, calling onChange with null file');
     onChange({
@@ -235,6 +299,8 @@ const ImageUploadField = ({
     if (onClear) {
       onClear();
     }
+    
+    setImageLoaded(false); // Reset image loaded state
   };
   
   // Update showClearButton based on image state
@@ -261,9 +327,9 @@ const ImageUploadField = ({
           border-2 ${hasImage ? 'border-primary-300 ring-2 ring-primary-100' : 'border-dashed'} rounded-lg
           ${!disabled ? 'cursor-pointer' : 'cursor-not-allowed'}
           transition-colors
-          ${imageFile || imagePreview
+          ${imagePreview
             ? 'border-primary-300 bg-primary-50'
-            : imageTouched && !imageFile && !imagePreview && !tempImageKey
+            : imageTouched && !imagePreview && !tempImageKey
               ? 'border-error-300 bg-error-50'
               : 'border-gray-300 hover:bg-gray-100'}
           ${disabled ? 'opacity-60' : ''}
@@ -327,7 +393,7 @@ const ImageUploadField = ({
           </button>
         )}
       </div>
-      {(imageTouched && !imageFile && !imagePreview && !tempImageKey) || uploadError ? (
+      {(imageTouched && !imagePreview) || uploadError ? (
         <p className="mt-1 text-sm text-error-600">{uploadError || 'Take A Photo, Do Not Upload'}</p>
       ) : (
        <center><p className="text-xs text-gray-500 mt-1">Click - Take A Photo - Done</p></center>

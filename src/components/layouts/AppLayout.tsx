@@ -2,7 +2,6 @@ import { Outlet, Link, useLocation, useNavigate, useParams } from 'react-router-
 import { useAuthStore } from '../../stores/authStore';
 import { supabase } from '../../lib/supabaseClient';
 import { usePilotProgramStore } from '../../stores/pilotProgramStore';
-import useCompanies from '../../hooks/useCompanies';
 import { 
   Home, 
   User, 
@@ -20,7 +19,6 @@ import { toast } from 'react-toastify';
 import useUserRole from '../../hooks/useUserRole';
 import ActiveSessionsDrawer from '../submissions/ActiveSessionsDrawer';
 import { useSessionStore } from '../../stores/sessionStore';
-import sessionManager from '../../lib/sessionManager';
 import Button from '../common/Button';
 
 const AppLayout = () => {
@@ -65,7 +63,7 @@ const AppLayout = () => {
         const sessions = await sessionManager.getActiveSessions();
         // Filter out cancelled and expired sessions
         const filteredSessions = sessions.filter(
-          session => session.session_status !== 'Cancelled' && session.session_status !== 'Expired'
+          session => !['Cancelled', 'Expired', 'Expired-Complete', 'Expired-Incomplete'].includes(session.session_status)
         );
         setActiveSessions(filteredSessions);
         setHasActiveSessions(filteredSessions.length > 0);

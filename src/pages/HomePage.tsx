@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  Leaf,
   Plus,
   CloudRain,
   Sun,
@@ -266,7 +267,7 @@ const HomePage = () => {
      <div className="animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div className="flex-grow">
-          <h1 className="text-2xl font-bold text-gray-900">Welcome to GasX InVivo</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Welcome to GRMTek Sporeless</h1>
           <p className="text-gray-600 mt-1">Your field operations dashboard</p>
         </div>
         
@@ -552,7 +553,7 @@ const HomePage = () => {
               </div>
             ) : recentSubmissions.length === 0 ? (
               <div className="text-center py-8">
-                <img src="/gasxinvivo-logo.svg" alt="GasX InVivo Logo" className="mx-auto h-12 w-12 text-gray-300" />
+                <Leaf className="mx-auto h-12 w-12 text-gray-300" />
                 <p className="text-gray-600 mt-2">No recent submissions found</p>
                 {selectedSite && (
                   <Button

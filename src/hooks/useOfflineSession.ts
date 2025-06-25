@@ -6,6 +6,7 @@ import offlineStorage from '../utils/offlineStorage';
 import { toast } from 'react-toastify';
 import { createLogger } from '../utils/logger';
 import { PetriFormData, GasifierFormData } from '../utils/submissionUtils';
+import { supabase } from '../lib/supabaseClient';
 
 // Create a logger for this component
 const logger = createLogger('useOfflineSession');

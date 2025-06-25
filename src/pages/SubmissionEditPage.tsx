@@ -40,6 +40,7 @@ import sessionManager from '../lib/sessionManager';
 import SessionShareModal from '../components/submissions/SessionShareModal';
 import SubmissionOverviewCard from '../components/submissions/SubmissionOverviewCard';
 import { GasifierObservation, PetriObservation, Submission } from '../lib/types';
+import { supabase } from '../lib/supabaseClient';
 
 interface PetriForms extends ObservationFormState {
   petriCode: string;

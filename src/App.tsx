@@ -26,7 +26,7 @@ const HomePage = lazy(() => import('./pages/HomePage'));
 const PilotProgramsPage = lazy(() => import('./pages/PilotProgramsPage'));
 const SitesPage = lazy(() => import('./pages/SitesPage'));
 const SubmissionsPage = lazy(() => import('./pages/SubmissionsPage'));
-const SubmissionEditPage = lazy(() => import('./pages/SubmissionEditPage')); // Add this line
+const SubmissionEditPage = lazy(() => import('./components/submissions/SubmissionEditPage')); // Updated import path
 const NewSubmissionPage = lazy(() => import('./pages/NewSubmissionPage')); // Add this line
 const SiteTemplateManagementPage = lazy(() => import('./pages/SiteTemplateManagementPage'));
 const UserProfilePage = lazy(() => import('./pages/UserProfilePage'));

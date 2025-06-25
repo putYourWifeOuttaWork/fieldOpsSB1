@@ -84,7 +84,7 @@ const RegisterPage = () => {
             <Leaf className="h-8 w-8 text-primary-600" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Create an Account</h1>
-          <p className="text-gray-600 mt-1">Join GasX InVivo Field Operations</p>
+          <p className="text-gray-600 mt-1">Join GRMTek Sporeless Field Operations</p>
         </div>
 
         {registrationSuccessful ? (

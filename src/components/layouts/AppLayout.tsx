@@ -2,6 +2,7 @@ import { Outlet, Link, useLocation, useNavigate, useParams } from 'react-router-
 import { useAuthStore } from '../../stores/authStore';
 import { supabase } from '../../lib/supabaseClient';
 import { usePilotProgramStore } from '../../stores/pilotProgramStore';
+import useCompanies from '../../hooks/useCompanies';
 import { 
   Home, 
   User, 
@@ -64,7 +65,7 @@ const AppLayout = () => {
         const sessions = await sessionManager.getActiveSessions();
         // Filter out cancelled and expired sessions
         const filteredSessions = sessions.filter(
-          session => !['Cancelled', 'Expired', 'Expired-Complete', 'Expired-Incomplete'].includes(session.session_status)
+          session => session.session_status !== 'Cancelled' && session.session_status !== 'Expired'
         );
         setActiveSessions(filteredSessions);
         setHasActiveSessions(filteredSessions.length > 0);
@@ -111,7 +112,7 @@ const AppLayout = () => {
               
               <Link to="/home" className="flex items-center" data-testid="app-logo-link">
                 <Leaf className="h-5 w-5 sm:h-6 sm:w-6 mr-1 sm:mr-2" />
-                <h1 className="text-lg sm:text-xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">GasX InVivo</h1>
+                <h1 className="text-lg sm:text-xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">GRMTek Sporeless</h1>
               </Link>
             </div>
 
@@ -299,7 +300,7 @@ const AppLayout = () => {
       {/* Footer */}
       <footer className="bg-gray-100 border-t border-gray-200 py-3 sm:py-4 mt-auto" data-testid="app-footer">
         <div className="container mx-auto px-4 text-center text-xs sm:text-sm text-gray-600">
-          <p>© {new Date().getFullYear()} GRMTek - GasX InVivo Pilot Program Platform - Version 1.120. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} GRMTek Sporeless Pilot Program. All rights reserved.</p>
         </div>
       </footer>
       

@@ -267,7 +267,7 @@ const HomePage = () => {
      <div className="animate-fade-in">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
         <div className="flex-grow">
-          <h1 className="text-2xl font-bold text-gray-900">Welcome to GasX InVivo</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Welcome to GRMTek Sporeless</h1>
           <p className="text-gray-600 mt-1">Your field operations dashboard</p>
         </div>
         

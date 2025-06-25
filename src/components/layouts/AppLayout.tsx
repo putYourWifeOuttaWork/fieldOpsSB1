@@ -12,6 +12,7 @@ import {
   X,
   History,
   Building,
+  Leaf,
   ClipboardList
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -110,8 +111,8 @@ const AppLayout = () => {
               </button>
               
               <Link to="/home" className="flex items-center" data-testid="app-logo-link">
-                <img src="/gasxinvivo-logo.svg" alt="GasX InVivo Logo" className="h-6 sm:h-7 mr-1 sm:mr-2" />
-                <h1 className="text-lg sm:text-xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">GasX InVivo</h1>
+                <Leaf className="h-5 w-5 sm:h-6 sm:w-6 mr-1 sm:mr-2" />
+                <h1 className="text-lg sm:text-xl font-bold whitespace-nowrap overflow-hidden text-ellipsis">GRMTek Sporeless</h1>
               </Link>
             </div>
 
@@ -299,7 +300,7 @@ const AppLayout = () => {
       {/* Footer */}
       <footer className="bg-gray-100 border-t border-gray-200 py-3 sm:py-4 mt-auto" data-testid="app-footer">
         <div className="container mx-auto px-4 text-center text-xs sm:text-sm text-gray-600">
-          <p>© {new Date().getFullYear()} GasX InVivo Pilot Program. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} GRMTek Sporeless Pilot Program. All rights reserved.</p>
         </div>
       </footer>
       

@@ -2,7 +2,6 @@ import { openDB, DBSchema, IDBPDatabase } from 'idb';
 import { Submission, PetriObservation, GasifierObservation } from '../lib/types';
 import { SubmissionSession } from '../types/session';
 import { createLogger } from './logger';
-import { PetriFormData, GasifierFormData } from './submissionUtils';
 
 // Create a logger for offlineStorage
 const logger = createLogger('OfflineStorage');
@@ -32,7 +31,7 @@ let dbPromise: Promise<IDBPDatabase<GRMTekDB>>;
 
 const initDB = async () => {
   if (!dbPromise) {
-    dbPromise = openDB<GRMTekDB>('grmtek-offline-storage', 4, {
+    dbPromise = openDB<GRMTekDB>('grmtek-offline-storage', 3, {
       upgrade(db, oldVersion, newVersion) {
         // Create submissions store if it doesn't exist
         if (oldVersion < 1) {
@@ -53,18 +52,6 @@ const initDB = async () => {
           db.createObjectStore('submission_sessions', {
             keyPath: 'session_id'
           });
-        }
-        
-        // Upgrade to schema version 4: add support for storing observation data in sessions
-        if (oldVersion < 4) {
-          // If the submission_sessions store already exists, we need to keep its data
-          if (oldVersion >= 3) {
-            logger.debug('Upgrading IndexedDB schema to version 4 to support observation data caching');
-            
-            // We don't need to modify the schema since we're storing JSON in the existing store
-            // But we can make a note in the logs that this upgrade occurred
-            logger.debug('IndexedDB schema upgraded to version 4. No schema changes needed as observation data will be stored in existing JSONB fields.');
-          }
         }
       }
     });
@@ -192,28 +179,13 @@ export const clearSyncedSubmissions = async () => {
 // Save a session to IndexedDB
 export const saveSession = async (session: SubmissionSession): Promise<void> => {
   const db = await initDB();
-  logger.debug(`Saving session to IndexedDB: ${session.session_id}`, {
-    hasPetriData: !!session.petriObservationsData && session.petriObservationsData.length > 0,
-    hasGasifierData: !!session.gasifierObservationsData && session.gasifierObservationsData.length > 0
-  });
   await db.put('submission_sessions', session);
 };
 
 // Get a session by ID
 export const getSession = async (sessionId: string): Promise<SubmissionSession | undefined> => {
   const db = await initDB();
-  const session = await db.get('submission_sessions', sessionId);
-  
-  if (session) {
-    logger.debug(`Retrieved session from IndexedDB: ${sessionId}`, {
-      hasPetriData: !!session.petriObservationsData && session.petriObservationsData.length > 0,
-      hasGasifierData: !!session.gasifierObservationsData && session.gasifierObservationsData.length > 0
-    });
-  } else {
-    logger.debug(`No session found in IndexedDB with ID: ${sessionId}`);
-  }
-  
-  return session;
+  return db.get('submission_sessions', sessionId);
 };
 
 // Get all sessions

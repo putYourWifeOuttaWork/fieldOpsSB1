@@ -143,42 +143,22 @@ const SubmissionOverviewCard: React.FC<SubmissionOverviewCardProps> = ({
     
     // Initial calculation
     const initialRemaining = differenceInSeconds(expirationTime, now);
-    const initialRemainingString = formatTimeRemaining(initialRemaining);
-    
-    // Only update state if values have changed
-    if (timeRemaining !== initialRemaining) {
-      setTimeRemaining(initialRemaining);
-    }
-    
-    if (timeRemainingString !== initialRemainingString) {
-      setTimeRemainingString(initialRemainingString);
-    }
+    setTimeRemaining(initialRemaining);
+    setTimeRemainingString(formatTimeRemaining(initialRemaining));
     
     // Update every second
     const interval = setInterval(() => {
       const now = new Date();
       if (now > expirationTime) {
         clearInterval(interval);
-        if (timeRemaining !== 0) {
-          setTimeRemaining(0);
-        }
-        if (timeRemainingString !== "Expired") {
-          setTimeRemainingString("Expired");
-        }
+        setTimeRemaining(0);
+        setTimeRemainingString("Expired");
         return;
       }
       
       const seconds = differenceInSeconds(expirationTime, now);
-      const formattedTime = formatTimeRemaining(seconds);
-      
-      // Only update state if values have changed
-      if (timeRemaining !== seconds) {
-        setTimeRemaining(seconds);
-      }
-      
-      if (timeRemainingString !== formattedTime) {
-        setTimeRemainingString(formattedTime);
-      }
+      setTimeRemaining(seconds);
+      setTimeRemainingString(formatTimeRemaining(seconds));
     }, 1000);
     
     return () => clearInterval(interval);

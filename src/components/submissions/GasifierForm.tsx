@@ -57,7 +57,6 @@ interface GasifierFormProps {
   observationId?: string;
   submissionOutdoorTemperature?: number;
   submissionOutdoorHumidity?: number;
-  onSaveTrigger?: () => void;  // New prop
 }
 
 export interface GasifierFormRef {
@@ -136,8 +135,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
   disabled = false,
   observationId,
   submissionOutdoorTemperature,
-  submissionOutdoorHumidity,
-  onSaveTrigger
+  submissionOutdoorHumidity
 }, ref) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [tempImageKey, setTempImageKey] = useState<string | undefined>(initialData?.tempImageKey);
@@ -202,7 +200,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
                   hasImage;
   
   const toggleExpanded = (e: React.MouseEvent) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Prevent bubbling to parent containers
     setIsExpanded(!isExpanded);
   };
   
@@ -297,7 +295,7 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
       onUpdate(formId, {
         gasifierCode: formik.values.gasifierCode,
         imageFile,
-        imageUrl,
+        imageUrl: initialData?.observationId ? initialData?.imageUrl : undefined,
         tempImageKey,
         chemicalType: formik.values.chemicalType,
         measure: formik.values.measure,
@@ -386,7 +384,6 @@ const GasifierForm = forwardRef<GasifierFormRef, GasifierFormProps>(({
           onChange={handleImageChange}
           disabled={disabled}
           testId={`gasifier-image-upload-${formId}`}
-          onSaveTrigger={onSaveTrigger}
         />
 
         {/* Column 2: Code and Placement Height */}

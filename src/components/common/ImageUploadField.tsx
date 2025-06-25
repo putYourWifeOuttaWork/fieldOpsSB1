@@ -3,7 +3,6 @@ import { Upload, Check, AlertCircle, XCircle } from 'lucide-react';
 import offlineStorage from '../../utils/offlineStorage';
 import useWeather from '../../hooks/useWeather';
 import { createLogger } from '../../utils/logger';
-import SavePromptTooltip from './SavePromptTooltip';
 
 // Create a component-specific logger
 const logger = createLogger('ImageUploadField');
@@ -23,7 +22,6 @@ interface ImageUploadFieldProps {
     isDirty: boolean;
   }) => void;
   onClear?: () => void;
-  onSaveTrigger?: () => void;  // New prop for save function
   disabled?: boolean;
   testId?: string;
   className?: string;
@@ -37,7 +35,6 @@ const ImageUploadField = ({
   imageId,
   onChange,
   onClear,
-  onSaveTrigger,  // New prop
   disabled = false,
   testId,
   className = ''
@@ -48,9 +45,7 @@ const ImageUploadField = ({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [tempImageKey, setTempImageKey] = useState<string | undefined>(initialTempImageKey);
   const [showClearButton, setShowClearButton] = useState(false);
-  const [showSavePrompt, setShowSavePrompt] = useState(false);  // New state for save prompt
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const imagePreviewRef = useRef<HTMLDivElement>(null);  // New ref for image container
   
   // Weather hook for environmental data capture
   const { currentConditions } = useWeather();
@@ -141,15 +136,9 @@ const ImageUploadField = ({
         onChange({ 
           file, 
           tempImageKey: newTempKey,
-          imageUrl: reader.result as string,
           isDirty: true,
           ...environmentalData
         });
-        
-        // Show save prompt tooltip if onSaveTrigger is provided
-        if (onSaveTrigger) {
-          setShowSavePrompt(true);
-        }
         
       } catch (error) {
         logger.error('Error storing image:', error);
@@ -175,8 +164,8 @@ const ImageUploadField = ({
             setImageFile(file);
             
             const environmentalData = {
-              outdoor_temperature: currentConditions?.temp,
-              outdoor_humidity: currentConditions?.RelativeHumidity || currentConditions?.humidity
+            outdoor_temperature: currentConditions?.temp,
+            outdoor_humidity: currentConditions?.RelativeHumidity || currentConditions?.humidity
             };
 
             const url = URL.createObjectURL(blob);
@@ -193,9 +182,8 @@ const ImageUploadField = ({
             onChange({
               file,
               tempImageKey,
-              imageUrl: url,
               isDirty: false,
-              ...environmentalData
+              ...environmentalData // '...' i guess is a thing...
             });
 
             return () => {
@@ -267,7 +255,6 @@ const ImageUploadField = ({
         {label}
       </label>
       <div 
-        ref={imagePreviewRef}  // Add ref to the image container
         onClick={disabled ? undefined : triggerFileInput}
         className={`
           relative flex flex-col items-center justify-center w-full h-28
@@ -311,7 +298,7 @@ const ImageUploadField = ({
               <>
                 <Upload className="w-6 h-6 text-gray-400" />
                 <p className="text-xs text-gray-500 mt-1">
-                  <span className="text-center">Click to Take A Photo (No Need For Uploads)</span>
+                  <center>Click to Take A Photo (No Need For Uploads)</center>
                 </p>
               </>
             )}
@@ -343,17 +330,7 @@ const ImageUploadField = ({
       {(imageTouched && !imageFile && !imagePreview && !tempImageKey) || uploadError ? (
         <p className="mt-1 text-sm text-error-600">{uploadError || 'Take A Photo, Do Not Upload'}</p>
       ) : (
-       <div className="text-xs text-gray-500 mt-1 text-center">Click - Take A Photo - Done</div>
-      )}
-      
-      {/* Save Prompt Tooltip */}
-      {onSaveTrigger && (
-        <SavePromptTooltip
-          isOpen={showSavePrompt}
-          onClose={() => setShowSavePrompt(false)}
-          onSave={onSaveTrigger}
-          targetRef={imagePreviewRef}
-        />
+       <center><p className="text-xs text-gray-500 mt-1">Click - Take A Photo - Done</p></center>
       )}
     </div>
   );

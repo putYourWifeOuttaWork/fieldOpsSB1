@@ -1,10 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
 import { toast } from 'react-toastify';
 import { PetriObservation, GasifierObservation } from '../lib/types';
-import { createLogger } from './logger';
-
-// Create a module-specific logger
-const logger = createLogger('SubmissionUtils');
 
 // Types for observation data
 export interface PetriFormData {
@@ -59,7 +55,7 @@ export const uploadImage = async (
   type: 'petri' | 'gasifier'
 ): Promise<string | null> => {
   try {
-    logger.debug(`[uploadImage] Starting upload for ${type} observation: ${observationId}`, {
+    console.log(`[uploadImage] Starting upload for ${type} observation: ${observationId}`, {
       fileSize: file.size,
       fileType: file.type,
       fileName: file.name
@@ -72,7 +68,7 @@ export const uploadImage = async (
       .upload(fileName, file);
       
     if (fileError) {
-      logger.error(`Error uploading ${type} image:`, fileError);
+      console.error(`Error uploading ${type} image:`, fileError);
       throw fileError;
     }
     
@@ -81,12 +77,12 @@ export const uploadImage = async (
       .from('petri-images')
       .getPublicUrl(fileData.path);
     
-    logger.debug(`[uploadImage] Successfully uploaded image, got URL:`, 
+    console.log(`[uploadImage] Successfully uploaded image, got URL:`, 
       publicUrlData.publicUrl.substring(0, 50) + '...');
     
     return publicUrlData.publicUrl;
   } catch (error) {
-    logger.error(`Error in uploadImage for ${type}:`, error);
+    console.error(`Error in uploadImage for ${type}:`, error);
     return null;
   }
 };
@@ -98,7 +94,7 @@ export const updatePetriObservation = async (
   siteId: string
 ): Promise<{ success: boolean; observationId?: string; message?: string }> => {
   try {
-    logger.debug('[updatePetriObservation] Starting with form data:', { 
+    console.log('[updatePetriObservation] Starting with form data:', { 
       hasFormData: !!formData,
       petriCode: formData.petriCode,
       hasImageFile: !!formData.imageFile,
@@ -118,16 +114,16 @@ export const updatePetriObservation = async (
       let imageUrl = formData.imageUrl;
       
       if (formData.imageFile) {
-        logger.debug('[updatePetriObservation] Uploading new image for existing observation');
+        console.log('[updatePetriObservation] Uploading new image for existing observation');
         imageUrl = await uploadImage(formData.imageFile, siteId, submissionId, formData.formId, 'petri');
         
         if (!imageUrl) {
-          logger.error('[updatePetriObservation] Failed to upload image');
+          console.error('[updatePetriObservation] Failed to upload image');
           return { success: false, message: 'Failed to upload image' };
         }
       }
 
-      logger.debug('[updatePetriObservation] Updating existing observation with new data');
+      console.log('[updatePetriObservation] Updating existing observation with new data');
       
       // Update the observation
       const { error } = await supabase
@@ -148,7 +144,7 @@ export const updatePetriObservation = async (
         .eq('observation_id', formData.observationId);
         
       if (error) {
-        logger.error('Error updating petri observation:', error);
+        console.error('Error updating petri observation:', error);
         return { success: false, message: error.message };
       }
       
@@ -160,16 +156,16 @@ export const updatePetriObservation = async (
       let imageUrl = null;
       
       if (formData.imageFile) {
-        logger.debug('[updatePetriObservation] Uploading new image for new observation');
+        console.log('[updatePetriObservation] Uploading new image for new observation');
         imageUrl = await uploadImage(formData.imageFile, siteId, submissionId, formData.formId, 'petri');
         
         if (!imageUrl) {
-          logger.error('[updatePetriObservation] Failed to upload image');
+          console.error('[updatePetriObservation] Failed to upload image');
           return { success: false, message: 'Failed to upload image' };
         }
       }
 
-      logger.debug('[updatePetriObservation] Creating new petri observation');
+      console.log('[updatePetriObservation] Creating new petri observation');
       
       // Insert new observation
       const { data, error } = await supabase
@@ -193,16 +189,16 @@ export const updatePetriObservation = async (
         .single();
         
       if (error) {
-        logger.error('Error creating petri observation:', error);
+        console.error('Error creating petri observation:', error);
         return { success: false, message: error.message };
       }
       
-      logger.debug('[updatePetriObservation] Created new observation with ID:', data.observation_id);
+      console.log('[updatePetriObservation] Created new observation with ID:', data.observation_id);
       
       return { success: true, observationId: data.observation_id };
     }
   } catch (error) {
-    logger.error('Error in updatePetriObservation:', error);
+    console.error('Error in updatePetriObservation:', error);
     return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
   }
 };
@@ -214,7 +210,7 @@ export const updateGasifierObservation = async (
   siteId: string
 ): Promise<{ success: boolean; observationId?: string; message?: string }> => {
   try {
-    logger.debug('[updateGasifierObservation] Starting with form data:', { 
+    console.log('[updateGasifierObservation] Starting with form data:', { 
       hasFormData: !!formData,
       gasifierCode: formData.gasifierCode,
       hasImageFile: !!formData.imageFile,
@@ -234,16 +230,16 @@ export const updateGasifierObservation = async (
       let imageUrl = formData.imageUrl;
       
       if (formData.imageFile) {
-        logger.debug('[updateGasifierObservation] Uploading new image for existing observation');
+        console.log('[updateGasifierObservation] Uploading new image for existing observation');
         imageUrl = await uploadImage(formData.imageFile, siteId, submissionId, formData.formId, 'gasifier');
         
         if (!imageUrl) {
-          logger.error('[updateGasifierObservation] Failed to upload image');
+          console.error('[updateGasifierObservation] Failed to upload image');
           return { success: false, message: 'Failed to upload image' };
         }
       }
 
-      logger.debug('[updateGasifierObservation] Updating existing observation with new data');
+      console.log('[updateGasifierObservation] Updating existing observation with new data');
       
       // Update the observation
       const { error } = await supabase
@@ -265,7 +261,7 @@ export const updateGasifierObservation = async (
         .eq('observation_id', formData.observationId);
         
       if (error) {
-        logger.error('Error updating gasifier observation:', error);
+        console.error('Error updating gasifier observation:', error);
         return { success: false, message: error.message };
       }
       
@@ -277,16 +273,16 @@ export const updateGasifierObservation = async (
       let imageUrl = null;
       
       if (formData.imageFile) {
-        logger.debug('[updateGasifierObservation] Uploading new image for new observation');
+        console.log('[updateGasifierObservation] Uploading new image for new observation');
         imageUrl = await uploadImage(formData.imageFile, siteId, submissionId, formData.formId, 'gasifier');
         
         if (!imageUrl) {
-          logger.error('[updateGasifierObservation] Failed to upload image');
+          console.error('[updateGasifierObservation] Failed to upload image');
           return { success: false, message: 'Failed to upload image' };
         }
       }
 
-      logger.debug('[updateGasifierObservation] Creating new gasifier observation');
+      console.log('[updateGasifierObservation] Creating new gasifier observation');
       
       // Insert new observation
       const { data, error } = await supabase
@@ -311,16 +307,16 @@ export const updateGasifierObservation = async (
         .single();
         
       if (error) {
-        logger.error('Error creating gasifier observation:', error);
+        console.error('Error creating gasifier observation:', error);
         return { success: false, message: error.message };
       }
       
-      logger.debug('[updateGasifierObservation] Created new observation with ID:', data.observation_id);
+      console.log('[updateGasifierObservation] Created new observation with ID:', data.observation_id);
       
       return { success: true, observationId: data.observation_id };
     }
   } catch (error) {
-    logger.error('Error in updateGasifierObservation:', error);
+    console.error('Error in updateGasifierObservation:', error);
     return { success: false, message: error instanceof Error ? error.message : 'Unknown error' };
   }
 };
@@ -331,7 +327,7 @@ export const updatePetriObservations = async (
   submissionId: string,
   siteId: string
 ): Promise<{ success: boolean; updatedObservations: { clientId: string; observationId: string }[] }> => {
-  logger.debug(`[updatePetriObservations] Processing ${petriObservations.length} petri observations`, 
+  console.log(`[updatePetriObservations] Processing ${petriObservations.length} petri observations`, 
     petriObservations.map(p => ({
       formId: p.formId,
       petriCode: p.petriCode,
@@ -357,7 +353,7 @@ export const updatePetriObservations = async (
       });
     } else {
       success = false;
-      logger.error(`Failed to update petri observation ${observation.formId}:`, result.message);
+      console.error(`Failed to update petri observation ${observation.formId}:`, result.message);
       toast.error(`Failed to update petri observation: ${result.message}`);
       break;
     }
@@ -372,7 +368,7 @@ export const updateGasifierObservations = async (
   submissionId: string,
   siteId: string
 ): Promise<{ success: boolean; updatedObservations: { clientId: string; observationId: string }[] }> => {
-  logger.debug(`[updateGasifierObservations] Processing ${gasifierObservations.length} gasifier observations`,
+  console.log(`[updateGasifierObservations] Processing ${gasifierObservations.length} gasifier observations`,
     gasifierObservations.map(g => ({
       formId: g.formId,
       gasifierCode: g.gasifierCode,
@@ -398,7 +394,7 @@ export const updateGasifierObservations = async (
       });
     } else {
       success = false;
-      logger.error(`Failed to update gasifier observation ${observation.formId}:`, result.message);
+      console.error(`Failed to update gasifier observation ${observation.formId}:`, result.message);
       toast.error(`Failed to update gasifier observation: ${result.message}`);
       break;
     }

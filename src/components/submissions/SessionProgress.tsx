@@ -57,15 +57,8 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
     
     // Initial calculation
     const initialRemaining = differenceInSeconds(expirationTime, now);
-    const formattedTime = formatTimeRemaining(initialRemaining);
-    
-    // Only update if values are different
-    if (timeRemaining !== initialRemaining) {
-      setTimeRemaining(initialRemaining);
-    }
-    if (timeRemainingString !== formattedTime) {
-      setTimeRemainingString(formattedTime);
-    }
+    setTimeRemaining(initialRemaining);
+    setTimeRemainingString(formatTimeRemaining(initialRemaining));
     
     // Update every second
     const interval = setInterval(() => {
@@ -78,15 +71,8 @@ const SessionProgress: React.FC<SessionProgressProps> = ({
       }
       
       const seconds = differenceInSeconds(expirationTime, now);
-      const formattedTime = formatTimeRemaining(seconds);
-      
-      // Only update if values are different
-      if (timeRemaining !== seconds) {
-        setTimeRemaining(seconds);
-      }
-      if (timeRemainingString !== formattedTime) {
-        setTimeRemainingString(formattedTime);
-      }
+      setTimeRemaining(seconds);
+      setTimeRemainingString(formatTimeRemaining(seconds));
     }, 1000);
     
     return () => clearInterval(interval);

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { Eye, EyeOff, Leaf, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
@@ -80,11 +80,11 @@ const RegisterPage = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8 animate-slide-up">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-4">
-            <Leaf className="h-8 w-8 text-primary-600" />
+          <div className="inline-flex justify-center mb-4">
+            <img src="/gasxinvivo-logo.svg" alt="GasX InVivo Logo" className="h-16 w-auto" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Create an Account</h1>
-          <p className="text-gray-600 mt-1">Join GRMTek Sporeless Field Operations</p>
+          <p className="text-gray-600 mt-1">Join GasX InVivo Field Operations</p>
         </div>
 
         {registrationSuccessful ? (

@@ -39,8 +39,8 @@ export const createSubmissionSession = async (
       p_site_id: siteId,
       p_program_id: programId,
       p_submission_data: submissionData,
-      p_petri_templates: petriTemplatesJson,
-      p_gasifier_templates: gasifierTemplatesJson
+      p_petri_templates: petriTemplates,
+      p_gasifier_templates: gasifierTemplates
     });
 
     if (error) {

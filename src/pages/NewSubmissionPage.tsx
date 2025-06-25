@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { ArrowLeft, CloudRain, Sun, Cloud, Thermometer, Droplets, Info, MapPin, Clock } from 'lucide-react';
@@ -14,6 +14,10 @@ import useCompanies from '../hooks/useCompanies';
 import LoadingScreen from '../components/common/LoadingScreen';
 import { toast } from 'react-toastify';
 import sessionManager from '../lib/sessionManager';
+import { createLogger } from '../utils/logger';
+
+// Create a logger for this component
+const logger = createLogger('NewSubmissionPage');
 
 // Schema for form validation
 const SubmissionSchema = Yup.object().shape({
@@ -81,11 +85,11 @@ const NewSubmissionPage = () => {
         return;
       }
       
-      console.log(`Loading site data for ${siteId}...`);
+      logger.debug(`Loading site data for ${siteId}...`);
       
       // Check if we already have the site data locally
       if (localSiteData && localSiteData.site_id === siteId) {
-        console.log(`Site loaded: ${localSiteData.name}`);
+        logger.debug(`Site loaded: ${localSiteData.name}`);
         setIsTransportFacility(localSiteData.type === 'Transport');
         return;
       }
@@ -95,18 +99,18 @@ const NewSubmissionPage = () => {
         if (site) {
           setSelectedSite(site);
           setLocalSiteData(site); // Store site data locally
-          console.log(`Site loaded: ${site.name}`);
+          logger.debug(`Site loaded: ${site.name}`);
           setIsTransportFacility(site.type === 'Transport');
           
           // Log template data for debugging
-          console.log('Site petri_defaults:', site.petri_defaults);
-          console.log('Site gasifier_defaults:', site.gasifier_defaults);
+          logger.debug('Site petri_defaults:', site.petri_defaults);
+          logger.debug('Site gasifier_defaults:', site.gasifier_defaults);
         } else {
           toast.error('Site not found');
           navigate(`/programs/${programId}/sites`);
         }
       } catch (error) {
-        console.error('Error loading site:', error);
+        logger.error('Error loading site:', error);
         toast.error('Failed to load site data');
         navigate(`/programs/${programId}/sites`);
       }
@@ -130,7 +134,7 @@ const NewSubmissionPage = () => {
             };
           })
           .catch(error => {
-            console.error('Error checking geolocation permission:', error);
+            logger.error('Error checking geolocation permission:', error);
           });
       } else {
         // Fallback for browsers that don't support the permissions API
@@ -192,11 +196,11 @@ const NewSubmissionPage = () => {
         const petriDefaults = localSiteData?.petri_defaults;
         const gasifierDefaults = localSiteData?.gasifier_defaults;
         
-        console.log('Creating session with the following data:');
-        console.log('Submission data:', submissionData);
-        console.log('Petri defaults:', petriDefaults);
-        console.log('Gasifier defaults:', gasifierDefaults);
-        console.log('Using templates (petri/gasifier):', !!petriDefaults, !!gasifierDefaults);
+        logger.debug('Creating session with the following data:');
+        logger.debug('Submission data:', submissionData);
+        logger.debug('Petri defaults:', petriDefaults);
+        logger.debug('Gasifier defaults:', gasifierDefaults);
+        logger.debug('Using templates (petri/gasifier):', !!petriDefaults, !!gasifierDefaults);
         
         // Create the submission session
         const response = await sessionManager.createSubmissionSession(
@@ -208,15 +212,20 @@ const NewSubmissionPage = () => {
         );
         
         if (response.success && response.submission_id) {
-          // Navigate to the new submission edit page
-          navigate(`/programs/${programId}/sites/${siteId}/submissions/${response.submission_id}/edit`);
+          // Navigate to the new submission edit page with the observation data
+          navigate(`/programs/${programId}/sites/${siteId}/submissions/${response.submission_id}/edit`, {
+            state: {
+              petriObservations: response.petri_observations || [],
+              gasifierObservations: response.gasifier_observations || []
+            }
+          });
           toast.success('Submission created successfully. You can now add observations.');
         } else {
-          console.error('Failed to create submission session:', response);
+          logger.error('Failed to create submission session:', response);
           toast.error(response.message || 'Failed to create submission');
         }
       } catch (error) {
-        console.error('Error creating submission:', error);
+        logger.error('Error creating submission:', error);
         toast.error('Error creating submission. Please try again.');
       } finally {
         setSubmitting(false);
@@ -328,7 +337,7 @@ const NewSubmissionPage = () => {
           setLocationPermissionStatus('granted');
           
           // You could store lat/long here if needed
-          console.log('Location obtained:', position.coords.latitude, position.coords.longitude);
+          logger.debug('Location obtained:', position.coords.latitude, position.coords.longitude);
           
           // Get timezone from browser
           const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -338,7 +347,7 @@ const NewSubmissionPage = () => {
         },
         (error) => {
           // Error getting position
-          console.error('Error getting location:', error);
+          logger.error('Error getting location:', error);
           setLocationPermissionStatus('denied');
           
           if (error.code === error.PERMISSION_DENIED) {

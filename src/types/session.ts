@@ -63,6 +63,8 @@ export interface CreateSessionResponse {
   session_id?: string;
   session?: SubmissionSession;
   message?: string;
+  petri_observations?: any[]; // Array of created petri observations
+  gasifier_observations?: any[]; // Array of created gasifier observations
 }
 
 // Session progress information

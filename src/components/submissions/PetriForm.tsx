@@ -340,7 +340,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
         </div>
         
         {showRemoveButton && !disabled && (
-          <Button 
+          /*<Button 
             type="button" 
             variant="danger" 
             size="sm"
@@ -350,7 +350,7 @@ const PetriForm = forwardRef<PetriFormRef, PetriFormProps>(({
             testId={`remove-petri-button-${formId}`}
           >
             Remove
-          </Button>
+          </Button>*/
         )}
       </div>
       
